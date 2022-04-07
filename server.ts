@@ -2,6 +2,7 @@ import express, { NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import * as fs from "fs";
 import { PNG } from "pngjs";
+import compression from "compression";
 
 const app = express()
 const port = 3000
@@ -18,6 +19,7 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 };
 
+app.use(compression());
 app.use(corsMiddleware)
 app.use(bodyParser.json());
 
@@ -41,14 +43,26 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
         CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE);
+
+        const bufs:Buffer[] = [];
+        const f = `data/c_${ x }_${ y }.bin`;
+        if(!fs.existsSync(f)) continue;
+        const stream = fs.createReadStream(f);
+        stream.on("data", function (d) {
+            bufs.push(d as Buffer)
+        });
+        stream.on("end", function () {
+            CHUNKS[x][y] = Buffer.concat(bufs);
+        });
     }
 }
 
-app.get('/', (req: Request, res: Response) => {
+
+app.get('/', async (req: Request, res: Response) => {
     res.send('Hello World!')
 })
 
-app.get('/hello', (req: Request, res: Response) => {
+app.get('/hello', async (req: Request, res: Response) => {
     res.json({
         w: WIDTH,
         h: HEIGHT,
@@ -56,11 +70,11 @@ app.get('/hello', (req: Request, res: Response) => {
     })
 });
 
-app.get('/canvas', (req: Request, res: Response) => {
+app.get('/canvas', async (req: Request, res: Response) => {
 
 })
 
-app.get('/chunk/:x/:y', (req: Request, res: Response) => {
+app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
     const cX = parseInt(req.params['x']);
     const cY = parseInt(req.params['y']);
 
@@ -70,13 +84,12 @@ app.get('/chunk/:x/:y', (req: Request, res: Response) => {
     }
 
     const chunk = CHUNKS[cX][cY];
-    res.header('Content-Type', 'binary');
+    res.header('Content-Type', 'application/octet-stream');
     res.write(chunk, 'binary');
     res.end();
 });
 
-app.put('/place', (req: Request, res: Response) => {
-    console.log(req.body)
+app.put('/place', async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
         return;
@@ -88,12 +101,10 @@ app.put('/place', (req: Request, res: Response) => {
     }
     const cX = Math.floor(x / CHUNK_SIZE);
     const cY = Math.floor(y / CHUNK_SIZE);
-    console.log('chunk', cX, cY);
     const chunk = CHUNKS[cX][cY];
 
     const iX = x - (cX * CHUNK_SIZE);
     const iY = y - (cY * CHUNK_SIZE);
-    console.log(iX, iY);
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
 
     const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`)
