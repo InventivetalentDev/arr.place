@@ -44,9 +44,9 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
         CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE);
 
-        const bufs:Buffer[] = [];
+        const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
-        if(!fs.existsSync(f)) continue;
+        if (!fs.existsSync(f)) continue;
         const stream = fs.createReadStream(f);
         stream.on("data", function (d) {
             bufs.push(d as Buffer)
@@ -69,10 +69,6 @@ app.get('/hello', async (req: Request, res: Response) => {
         c: COLORS
     })
 });
-
-app.get('/canvas', async (req: Request, res: Response) => {
-
-})
 
 app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
     const cX = parseInt(req.params['x']);
@@ -109,7 +105,7 @@ app.put('/place', async (req: Request, res: Response) => {
 
     const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`)
     stream.write(chunk);
-    stream.on("end", function() {
+    stream.on("end", function () {
         stream.end();
     });
 
