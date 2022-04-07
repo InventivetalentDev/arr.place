@@ -1,0 +1,75 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #414141;
+}
+
+body {
+    margin: 0;
+}
+
+#main-container {
+    width: 100%;
+    height: 100%;
+}
+
+#controls-container {
+    z-index: 100;
+    position: absolute;
+    background-color: rgba(128, 128, 128, 0.29);
+    padding: 10px;
+}
+
+.color-button {
+    cursor: pointer;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin:  10px;
+}
+.color-button.selected-color {
+    box-shadow: #eeeeee 0 0 6px 6px
+}
+
+#camera {
+    user-select: none;
+    display: block;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+#position {
+    user-select: none;
+    position: absolute;
+    transform-origin: left top;
+}
+
+#zoom {
+    user-select: none;
+    position: relative;
+    transform-origin: left top;
+
+    transition-duration: 200ms;
+}
+
+#selection-container {
+    position: absolute;
+    z-index: 1000;
+    width: 1px;
+    height: 1px;
+    /*border: black solid;*/
+    transform-origin: left top;
+    pointer-events: none;
+}
+
+#canvas {
+    display: block;
+    image-rendering: pixelated;
+    left: 0;
+    top: 0;
+    /*top: 0;*/
+    /*left: 0;*/
+}
