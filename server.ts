@@ -30,12 +30,20 @@ const HEIGHT = CHUNK_SIZE * 8;
 const COLORS = [
     '#ffffff',
     '#000000',
-    '#ff0000',
-    '#ffff00',
-    '#00ff00',
-    '#00ffff',
-    '#0000ff',
-    '#ff00ff'
+    '#0000AA',
+    '#00AA00',
+    '#00AAAA',
+    '#AA0000',
+    '#AA00AA',
+    '#FFAA00',
+    '#AAAAAA',
+    '#555555',
+    '#5555FF',
+    '#55FF55',
+    '#55FFFF',
+    '#FF5555',
+    '#FF55FF',
+    '#FFFF55'
 ]
 
 const CHUNKS: Buffer[][] = [[]]
