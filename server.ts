@@ -3,6 +3,7 @@ import bodyParser from "body-parser";
 import * as fs from "fs";
 import { PNG } from "pngjs";
 import compression from "compression";
+import { createGzip, deflate, inflate } from "zlib";
 
 const app = express()
 const port = 3000
@@ -61,7 +62,12 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
             bufs.push(d as Buffer)
         });
         stream.on("end", function () {
-            CHUNKS[x][y] = Buffer.concat(bufs);
+             inflate(Buffer.concat(bufs),(err,buffer)=>{
+                 if (err) {
+                     console.error(err);
+                 }
+                 CHUNKS[x][y] = buffer;
+            });
         });
     }
 }
@@ -112,11 +118,19 @@ app.put('/place', async (req: Request, res: Response) => {
     const iY = y - (cY * CHUNK_SIZE);
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
 
-    const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`)
-    stream.write(chunk);
-    stream.on("end", function () {
-        stream.end();
-    });
+    console.log(`chunk size ${ cX },${ cY }: ${ chunk.length / 1000 }kb`);
+    deflate(chunk,(err,buffer)=>{
+        if (err) {
+            console.error(err);
+        }
+        console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length / 1000 }kb`);
+        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`)
+        stream.write(buffer);
+        stream.on("end", function () {
+            stream.end();
+        });
+    })
+
 
     res.end();
 });
