@@ -38,6 +38,7 @@ body {
     width: 20px;
     height: 20px;
     margin:  10px;
+    box-shadow: #818181 0 0 3px 3px
 }
 .color-button.selected-color {
     box-shadow: #eeeeee 0 0 6px 6px
@@ -73,6 +74,8 @@ body {
     /*border: black solid;*/
     transform-origin: left top;
     pointer-events: none;
+    opacity: 0.8;
+    transition: transform 200ms;
 }
 
 #selection-container>svg {
