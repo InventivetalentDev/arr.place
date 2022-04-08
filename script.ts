@@ -158,8 +158,8 @@ function canvasClicked(event: MouseEvent) {
     canvasState.y = event.offsetY;
     // canvasState.x = ((event.offsetX) * z) - ((canvasEl.width / 2) * z);
     // canvasState.y = ((event.offsetY) * z) - ((canvasEl.height / 2) * z);
-    canvasState.sx = Math.round((event.offsetX + 4.5 - (canvasEl.width / 2.0))) * z;
-    canvasState.sy = Math.round((event.offsetY + 4.5 - (canvasEl.height / 2.0))) * z;
+    canvasState.sx = Math.round((event.offsetX - (canvasEl.width / 2.0))) * z;
+    canvasState.sy = Math.round((event.offsetY - (canvasEl.height / 2.0))) * z;
     console.log('click', canvasState.x, canvasState.y);
     updateSelection();
 

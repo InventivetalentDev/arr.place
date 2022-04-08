@@ -25,8 +25,9 @@ app.use(bodyParser.json());
 
 const CHUNK_SIZE = 128;
 
-const WIDTH = CHUNK_SIZE * 8;
-const HEIGHT = CHUNK_SIZE * 8;
+const WIDTH = CHUNK_SIZE * 4;
+const HEIGHT = CHUNK_SIZE * 4;
+
 const COLORS = [
     '#ffffff',
     '#000000',

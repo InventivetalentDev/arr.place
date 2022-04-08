@@ -39,6 +39,7 @@ body {
     width: 100%;
     overflow: hidden;
     position: relative;
+    transform-origin: left top;
 }
 
 #position {
@@ -58,11 +59,14 @@ body {
 #selection-container {
     position: absolute;
     z-index: 1000;
-    width: 1px;
-    height: 1px;
     /*border: black solid;*/
     transform-origin: left top;
     pointer-events: none;
+}
+
+#selection-container>svg {
+    width: 1px;
+    height: 1px;
 }
 
 #canvas {
