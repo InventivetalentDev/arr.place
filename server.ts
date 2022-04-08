@@ -29,6 +29,24 @@ const CHUNK_SIZE = 128;
 const WIDTH = CHUNK_SIZE * 4;
 const HEIGHT = CHUNK_SIZE * 4;
 
+// const COLORS = [
+//     [255,255,255],
+//     [0,0,0],
+//     [0,0,170],
+//     [0,170,0],
+//     [0,170,170],
+//     [170,0,0],
+//     [170,0,170],
+//     [255,170,0],
+//     [170,170,170],
+//     [85,85,85],
+//     [85,85,255],
+//     [85,255,85],
+//     [85,255,255],
+//     [255,85,85],
+//     [255,85,255],
+//     [255,255,85]
+// ];
 const COLORS = [
     '#ffffff',
     '#000000',
@@ -48,6 +66,34 @@ const COLORS = [
     '#FFFF55'
 ]
 
+// const CHUNKS: PNG[][] = [[]];
+// for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
+//     CHUNKS[x] = [];
+//     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
+//         CHUNKS[x][y] = new PNG({
+//             width: CHUNK_SIZE,
+//             height: CHUNK_SIZE,
+//             bitDepth: 8
+//         })
+//         //
+//         // const bufs: Buffer[] = [];
+//         // const f = `data/c_${ x }_${ y }.bin`;
+//         // if (!fs.existsSync(f)) continue;
+//         // const stream = fs.createReadStream(f,'utf8');
+//         // stream.on("data", function (d) {
+//         //     bufs.push(d as Buffer)
+//         // });
+//         // stream.on("end", function () {
+//         //      inflate(Buffer.concat(bufs),(err,buffer)=>{
+//         //          if (err) {
+//         //              console.error(err);
+//         //          }
+//         //          CHUNKS[x][y] = buffer;
+//         //     });
+//         // });
+//     }
+// }
+
 const CHUNKS: Buffer[][] = [[]]
 for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
@@ -57,7 +103,7 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
         const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
         if (!fs.existsSync(f)) continue;
-        const stream = fs.createReadStream(f);
+        const stream = fs.createReadStream(f,'utf8');
         stream.on("data", function (d) {
             bufs.push(d as Buffer)
         });
@@ -96,8 +142,15 @@ app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
 
     const chunk = CHUNKS[cX][cY];
     res.header('Content-Type', 'application/octet-stream');
+    // chunk.pack().pipe(res);
     res.write(chunk, 'binary');
     res.end();
+
+    // new PNG({
+    //     width: CHUNK_SIZE,
+    //     height: CHUNK_SIZE,
+    //     bitDepth: 8
+    // })
 });
 
 app.put('/place', async (req: Request, res: Response) => {
@@ -114,22 +167,29 @@ app.put('/place', async (req: Request, res: Response) => {
     const cY = Math.floor(y / CHUNK_SIZE);
     const chunk = CHUNKS[cX][cY];
 
+    const clr = COLORS[v];
+
     const iX = x - (cX * CHUNK_SIZE);
     const iY = y - (cY * CHUNK_SIZE);
+    const idx = (CHUNK_SIZE * iY + iX) << 2;
+    // chunk.data[idx] = clr[0];
+    // chunk.data[idx+1] = clr[1];
+    // chunk.data[idx+2] = clr[2];
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
 
-    console.log(`chunk size ${ cX },${ cY }: ${ chunk.length / 1000 }kb`);
+    console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
     deflate(chunk,(err,buffer)=>{
         if (err) {
             console.error(err);
         }
-        console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length / 1000 }kb`);
-        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`)
+        console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length } bytes`);
+        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`, 'utf8');
         stream.write(buffer);
         stream.on("end", function () {
             stream.end();
         });
     })
+    // chunk.pack().pipe(fs.createWriteStream(`data/c_${ cX }_${ cY }.png`))
 
 
     res.end();
