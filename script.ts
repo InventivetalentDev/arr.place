@@ -24,7 +24,7 @@ let canvasState: CState = {
     sy: 0,
     cx: 0,
     cy: 0,
-    cz: 1,
+    cz: 0.5,
     x: 0,
     y: 0
 };
@@ -37,8 +37,10 @@ async function init() {
     canvasEl.width = canvasState.w!;
     canvasEl.height = canvasState.h!;
 
-    canvasState.cx = canvasState.w / 2;
-    canvasState.cy = canvasState.h / 2;
+    const cameraBounds = camera.getBoundingClientRect();
+    const canvasBounds = canvasEl.getBoundingClientRect();
+    canvasState.cx = cameraBounds.width / 2 - canvasEl.width / 4;
+    canvasState.cy = cameraBounds.height / 2 - canvasEl.height / 4;
 
 
     for (let colorIndex = 0; colorIndex < canvasState.c.length; colorIndex++) {
@@ -67,8 +69,8 @@ async function init() {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
-    updateZoom();
     updatePosition();
+    updateZoom();
 
 
     for (let cX = 0; cX < canvasState.w / CHUNK_SIZE; cX++) {
@@ -153,14 +155,21 @@ function canvasClicked(event: MouseEvent) {
     event.preventDefault();
     console.log(event);
 
+    const bound = (event.target as HTMLElement).getBoundingClientRect();
+
     const z = 100.0;
-    canvasState.x = event.offsetX;
-    canvasState.y = event.offsetY;
-    // canvasState.x = ((event.offsetX) * z) - ((canvasEl.width / 2) * z);
-    // canvasState.y = ((event.offsetY) * z) - ((canvasEl.height / 2) * z);
-    canvasState.sx = Math.round((event.offsetX - (canvasEl.width / 2.0))) * z;
-    canvasState.sy = Math.round((event.offsetY - (canvasEl.height / 2.0))) * z;
+    // use clientXY + bound to get a more precise coordinate than offsetXY gives and subtract .5 to always center on the selected pixel
+    canvasState.x = Math.round(((event.clientX - bound.x) / canvasState.cz) - .5);
+    canvasState.y = Math.round(((event.clientY - bound.y) / canvasState.cz) - .5);
+
+    // scale by canvas scale
+    canvasState.sx = canvasState.x * z;
+    canvasState.sy = canvasState.y * z;
+
+    // canvasState.sx = Math.round((event.offsetX - (canvasState.w / 2.0))) * z;
+    // canvasState.sy = Math.round((event.offsetY - (canvasState.h / 2.0))) * z;
     console.log('click', canvasState.x, canvasState.y);
+    console.log(canvasState.sx, canvasState.sy)
     updateSelection();
 
     // ctx.fillStyle = 'blue';
@@ -168,20 +177,18 @@ function canvasClicked(event: MouseEvent) {
 }
 
 function scrolled(event: WheelEvent) {
-
-
-    // const cameraRect = camera.getBoundingClientRect();
-    //
-    // canvasState.cx += ((cameraRect.left + cameraRect.right) / 2) - (event.x - cameraRect.left);
-    // canvasState.cy += ((cameraRect.top + cameraRect.bottom) / 2) - (event.y - cameraRect.top);
-    //
-    // updatePosition();
-
+    // based on https://dev.to/stackfindover/zoom-image-point-with-mouse-wheel-11n3
+    const xs = (event.clientX - canvasState.cx) / canvasState.cz;
+    const ys = (event.clientY - canvasState.cy) / canvasState.cz;
 
     canvasState.cz -= event.deltaY * ZOOM_FACTOR * canvasState.cz;
     canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
     canvasState.cz = Math.min(MAX_ZOOM, canvasState.cz);
 
+    canvasState.cx = event.clientX - xs * canvasState.cz;
+    canvasState.cy = event.clientY - ys * canvasState.cz;
+
+    updatePosition();
     updateZoom();
 
 }
@@ -190,6 +197,7 @@ function updateSelection() {
     // selectionContainer.style.left = canvasState.x + 'px';
     // selectionContainer.style.top = canvasState.y + 'px';
     selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
+    // selectionContainer.style.transform = `translate3d(${canvasState.sx}px, ${canvasState.sy}px, 0) scale(100) `
 }
 
 function updateZoom() {
@@ -197,8 +205,12 @@ function updateZoom() {
 }
 
 function updatePosition() {
-    position.style.transform = `translateX(${ canvasState.cx }px) translateY(${ canvasState.cy }px)`;
+    position.style.transform = `translateX(${ canvasState.cx }px) translateY(${ canvasState.cy }px) scale(1)`;
     // position.style.transform = `translate3d(${ canvasState.cx }px, ${ canvasState.cy }px, 0)`;
+}
+
+function getDecimal(n: number): number {
+    return n - Math.floor(n);
 }
 
 canvasEl.addEventListener('click', canvasClicked);
@@ -236,6 +248,7 @@ document.addEventListener('mousemove', (e: MouseEvent) => {
         // canvasState.cy += (e.offsetY - dragStart.y) * z;
         canvasState.cx += e.movementX;
         canvasState.cy += e.movementY;
+        console.log(canvasState.cx, canvasState.cy)
         // canvasState.cx = Math.max(0, canvasState.cx);
         // canvasState.cy = Math.max(0, canvasState.cy);
         updatePosition();
