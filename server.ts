@@ -182,7 +182,7 @@ function savePNG(cX: number, cY: number) {
     // })
 
     const t = Math.floor(Date.now() / 1000);
-    png.pack().pipe(fs.createWriteStream(`pngs/c_${ cX }-${ cY }_${ t }.png`))
+    png.pack().pipe(fs.createWriteStream(`pngs/c_${ t }_${ cX }-${ cY }.png`))
     LAST_UPDATES[cX][cY] = t;
 }
 
@@ -231,6 +231,7 @@ app.get('/state', async (req:Request, res:Response) => {
             list.push(`c_${ x }-${ y }_${ LAST_UPDATES[x][y] }.png`);
         }
     }
+    res.header('Cache-Control', 'max-age=1')
     res.json(list);
 })
 

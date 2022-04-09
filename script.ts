@@ -110,7 +110,7 @@ function getState() {
         .then(res=>{
             for (let l of res) {
                 const split0 = l.split('_');
-                const split1 = split0[1].split('-');
+                const split1 = split0[2].split('-');
                 const x = parseInt(split1[0]);
                 const y = parseInt(split1[1]);
 
