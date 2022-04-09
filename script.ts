@@ -1,4 +1,5 @@
-const endpoint = 'https://api.arr.place';
+//const endpoint = 'https://api.arr.place';
+const endpoint = 'http://localho.st:3024'
 
 const mainContainer = document.getElementById('main-container') as HTMLDivElement;
 const controlsContainer = document.getElementById('controls-container') as HTMLDivElement;
@@ -20,6 +21,7 @@ let canvasState: CState = {
     w: 0,
     h: 0,
     c: [],
+    s: 0,
     sx: 0,
     sy: 0,
     cx: 0,
@@ -73,34 +75,40 @@ async function init() {
     updateZoom();
 
 
-    for (let cX = 0; cX < canvasState.w / CHUNK_SIZE; cX++) {
-        for (let cY = 0; cY < canvasState.w / CHUNK_SIZE; cY++) {
+    for (let cX = 0; cX < canvasState.w / canvasState.s; cX++) {
+        for (let cY = 0; cY < canvasState.w / canvasState.s; cY++) {
             loadChunk(cX, cY);
         }
     }
 
 }
 
-const CHUNK_SIZE = 128;
+// function loadChunk(cX: number, cY: number) {
+//     fetch(endpoint + `/chunk/${ cX }/${ cY }`)
+//         .then(res => res.arrayBuffer())
+//         .then(buf => {
+//             const data = new Uint8Array(buf);
+//             for (let x = 0; x < canvasState.s; x++) {
+//                 for (let y = 0; y < canvasState.s; y++) {
+//                     const iX = x + (cX * canvasState.s);
+//                     const iY = y + (cY * canvasState.s);
+//                     const v = data[(y * canvasState.s) + x];
+//                     ctx.fillStyle = canvasState.c[v];
+//                     ctx.fillRect(iX, iY, 1, 1);
+//                     if (v > 0) {
+//                         console.log(v)
+//                     }
+//                 }
+//             }
+//         })
+// }
 
 function loadChunk(cX: number, cY: number) {
-    fetch(endpoint + `/chunk/${ cX }/${ cY }`)
-        .then(res => res.arrayBuffer())
-        .then(buf => {
-            const data = new Uint8Array(buf);
-            for (let x = 0; x < CHUNK_SIZE; x++) {
-                for (let y = 0; y < CHUNK_SIZE; y++) {
-                    const iX = x + (cX * CHUNK_SIZE);
-                    const iY = y + (cY * CHUNK_SIZE);
-                    const v = data[(y * CHUNK_SIZE) + x];
-                    ctx.fillStyle = canvasState.c[v];
-                    ctx.fillRect(iX, iY, 1, 1);
-                    if (v > 0) {
-                        console.log(v)
-                    }
-                }
-            }
-        })
+    const img = document.createElement('img') as HTMLImageElement;
+    img.src = endpoint + `/pngs/c_${ cX }_${ cY }.png`;
+    img.onload = function () {
+        ctx.drawImage(img, cX * canvasState.s, cY * canvasState.s);
+    };
 }
 
 function clearSelectedColor() {
@@ -276,6 +284,7 @@ init();
 interface CState {
     w: number;
     h: number;
+    s: number;
     c: string[];
     sx: number;
     sy: number;

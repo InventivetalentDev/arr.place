@@ -4,6 +4,8 @@ import * as fs from "fs";
 import { PNG } from "pngjs";
 import compression from "compression";
 import { createGzip, deflate, inflate } from "zlib";
+import { pipeline } from "stream";
+import path from "path";
 
 const app = express()
 const port = 3024
@@ -24,29 +26,39 @@ app.use(compression());
 app.use(corsMiddleware)
 app.use(bodyParser.json());
 
+try {
+    fs.mkdirSync("data");
+} catch (e) {
+}
+
+try {
+    fs.mkdirSync("pngs");
+} catch (e) {
+}
+
 const CHUNK_SIZE = 128;
 
-const WIDTH = CHUNK_SIZE * 4;
-const HEIGHT = CHUNK_SIZE * 4;
+const WIDTH = CHUNK_SIZE * 2;
+const HEIGHT = CHUNK_SIZE * 2;
 
-// const COLORS = [
-//     [255,255,255],
-//     [0,0,0],
-//     [0,0,170],
-//     [0,170,0],
-//     [0,170,170],
-//     [170,0,0],
-//     [170,0,170],
-//     [255,170,0],
-//     [170,170,170],
-//     [85,85,85],
-//     [85,85,255],
-//     [85,255,85],
-//     [85,255,255],
-//     [255,85,85],
-//     [255,85,255],
-//     [255,255,85]
-// ];
+const COLORS_PNG = [
+    [255, 255, 255],
+    [0, 0, 0],
+    [0, 0, 170],
+    [0, 170, 0],
+    [0, 170, 170],
+    [170, 0, 0],
+    [170, 0, 170],
+    [255, 170, 0],
+    [170, 170, 170],
+    [85, 85, 85],
+    [85, 85, 255],
+    [85, 255, 85],
+    [85, 255, 255],
+    [255, 85, 85],
+    [255, 85, 255],
+    [255, 255, 85]
+];
 const COLORS = [
     '#ffffff',
     '#000000',
@@ -73,7 +85,9 @@ const COLORS = [
 //         CHUNKS[x][y] = new PNG({
 //             width: CHUNK_SIZE,
 //             height: CHUNK_SIZE,
-//             bitDepth: 8
+//             bitDepth: 8,
+//             colorType: 2,
+//             inputHasAlpha: false
 //         })
 //         //
 //         // const bufs: Buffer[] = [];
@@ -103,19 +117,52 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
         const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
         if (!fs.existsSync(f)) continue;
-        const stream = fs.createReadStream(f,'utf8');
+        const stream = fs.createReadStream(f);
         stream.on("data", function (d) {
             bufs.push(d as Buffer)
         });
         stream.on("end", function () {
-             inflate(Buffer.concat(bufs),(err,buffer)=>{
-                 if (err) {
-                     console.error(err);
-                 }
-                 CHUNKS[x][y] = buffer;
+            inflate(Buffer.concat(bufs), (err, buffer) => {
+                if (err) {
+                    console.error(err);
+                }
+                CHUNKS[x][y] = buffer;
             });
         });
     }
+}
+
+function savePNG(cX: number, cY: number) {
+    const chunk = CHUNKS[cX][cY];
+    if (!chunk) return;
+    const png = new PNG({
+        width: CHUNK_SIZE,
+        height: CHUNK_SIZE,
+        bitDepth: 8,
+        colorType: 2, // color, no alpha
+        inputHasAlpha: false,
+        bgColor: { red: 0, green: 0, blue: 0 }
+    });
+    for (let x = 0; x < CHUNK_SIZE; x++) {
+        for (let y = 0; y < CHUNK_SIZE; y++) {
+            const v = chunk.readUint8((y * CHUNK_SIZE) + x)
+            // const idx = (CHUNK_SIZE * y + x)<<2;
+            const idx = y * (CHUNK_SIZE * 3) + x * 3;
+            const clr = COLORS_PNG[v];
+            png.data[idx] = clr[0];
+            png.data[idx + 1] = clr[1];
+            png.data[idx + 2] = clr[2];
+        }
+    }
+
+    // const gzip = createGzip();
+    // pipeline(png.pack(), gzip, fs.createWriteStream(`pngs/c_${ cX }_${ cY }.png`), (err) => {
+    //     if (err) {
+    //         console.warn(err);
+    //     }
+    // })
+
+    png.pack().pipe(fs.createWriteStream(`pngs/c_${ cX }_${ cY }.png`))
 }
 
 
@@ -127,31 +174,34 @@ app.get('/hello', async (req: Request, res: Response) => {
     res.json({
         w: WIDTH,
         h: HEIGHT,
-        c: COLORS
+        c: COLORS,
+        s: CHUNK_SIZE
     })
 });
 
-app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
-    const cX = parseInt(req.params['x']);
-    const cY = parseInt(req.params['y']);
+app.use('/pngs', express.static('pngs'));
 
-    if (cX < 0 || cX > WIDTH / CHUNK_SIZE || cY < 0 || cY > HEIGHT / CHUNK_SIZE) {
-        res.status(400).end();
-        return;
-    }
-
-    const chunk = CHUNKS[cX][cY];
-    res.header('Content-Type', 'application/octet-stream');
-    // chunk.pack().pipe(res);
-    res.write(chunk, 'binary');
-    res.end();
-
-    // new PNG({
-    //     width: CHUNK_SIZE,
-    //     height: CHUNK_SIZE,
-    //     bitDepth: 8
-    // })
-});
+// app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
+//     const cX = parseInt(req.params['x']);
+//     const cY = parseInt(req.params['y']);
+//
+//     if (cX < 0 || cX > WIDTH / CHUNK_SIZE || cY < 0 || cY > HEIGHT / CHUNK_SIZE) {
+//         res.status(400).end();
+//         return;
+//     }
+//
+//     const chunk = CHUNKS[cX][cY];
+//     res.header('Content-Type', 'application/octet-stream');
+//     // chunk.pack().pipe(res);
+//     res.write(chunk, 'binary');
+//     res.end();
+//
+//     // new PNG({
+//     //     width: CHUNK_SIZE,
+//     //     height: CHUNK_SIZE,
+//     //     bitDepth: 8
+//     // })
+// });
 
 app.put('/place', async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
@@ -168,6 +218,7 @@ app.put('/place', async (req: Request, res: Response) => {
     const chunk = CHUNKS[cX][cY];
 
     const clr = COLORS[v];
+    console.log(clr);
 
     const iX = x - (cX * CHUNK_SIZE);
     const iY = y - (cY * CHUNK_SIZE);
@@ -178,12 +229,12 @@ app.put('/place', async (req: Request, res: Response) => {
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
 
     console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
-    deflate(chunk,(err,buffer)=>{
+    deflate(chunk, (err, buffer) => {
         if (err) {
             console.error(err);
         }
         console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length } bytes`);
-        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`, 'utf8');
+        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`);
         stream.write(buffer);
         stream.on("end", function () {
             stream.end();
@@ -191,6 +242,7 @@ app.put('/place', async (req: Request, res: Response) => {
     })
     // chunk.pack().pipe(fs.createWriteStream(`data/c_${ cX }_${ cY }.png`))
 
+    savePNG(cX, cY);
 
     res.end();
 });
