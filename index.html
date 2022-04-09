@@ -4,19 +4,24 @@
         <title>(ar)r.place</title>
         <meta name="description" content="totally not a r/place knockoff">
 
-        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="style.css?v=4">
     </head>
     <body>
 <!--        <div id="debug-cross">x</div>-->
         <div id="main-container">
             <div id="controls-container">
                 <div id="colors-container">
-
                 </div>
                 <div id="action-container">
-                    <button id="color-cancel-button">Cancel</button>
-                    <button id="color-place-button">Place</button>
+                    <button id="color-cancel-button" disabled>Cancel</button>
+                    <button id="color-place-button" disabled>Place</button>
                 </div>
+            </div>
+            <div id="timer-container" style="display: none">
+                <span id="timer">00:00</span>
+            </div>
+            <div id="position-container">
+                <span id="position-info"></span>
             </div>
 
             <div id="camera">
@@ -48,6 +53,6 @@
                 </div>
             </div>
         </div>
-        <script src="script.js?v=6"></script>
+        <script src="script.js?v=19"></script>
     </body>
 </html>

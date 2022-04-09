@@ -5,6 +5,7 @@ html, body {
     left:0;
     overflow: hidden;
     background-color: #383838;
+    font-family: sans-serif;
 }
 
 body {
@@ -28,8 +29,13 @@ body {
 #controls-container {
     z-index: 100;
     position: absolute;
-    background-color: rgba(128, 128, 128, 0.29);
-    padding: 10px;
+    /*background-color: rgba(128, 128, 128, 0.29);*/
+    padding: 10px 20px;
+    border-radius: 20px;
+    background-color: #141414;
+    top: 20px;
+    left: 20px;
+    box-shadow: #0000008a 1px 1px 4px 2px;
 }
 
 .color-button {
@@ -42,6 +48,32 @@ body {
 }
 .color-button.selected-color {
     box-shadow: #eeeeee 0 0 6px 6px
+}
+
+#timer-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+    background-color: #141414;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 50px;
+    box-shadow: #0000008a 1px 1px 4px 2px;
+    font-size: 20px;
+}
+
+#position-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+    background-color: #141414;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 50px;
+    box-shadow: #0000008a 1px 1px 4px 2px;
+    font-size: 18px;
 }
 
 #camera {

@@ -6,6 +6,9 @@ const controlsContainer = document.getElementById('controls-container') as HTMLD
 const colorsContainer = document.getElementById('colors-container') as HTMLDivElement;
 const colorPlaceButton = document.getElementById('color-place-button') as HTMLElement;
 const colorCancelButton = document.getElementById('color-cancel-button') as HTMLElement;
+const timerContainer = document.getElementById('timer-container') as HTMLElement;
+const positionInfo = document.getElementById('position-info') as HTMLElement;
+const timer = document.getElementById('timer') as HTMLElement;
 const camera = document.getElementById('camera') as HTMLDivElement;
 const position = document.getElementById('position') as HTMLDivElement;
 const zoom = document.getElementById('zoom') as HTMLDivElement;
@@ -28,12 +31,20 @@ let canvasState: CState = {
     cy: 0,
     cz: 0.5,
     x: 0,
-    y: 0
+    y: 0,
+    n: 0
 };
 
 let selectedColor = -1;
+let ticker: any = -1;
 
 async function init() {
+    const storedState = localStorage.getItem('canvas_state');
+    if (storedState) {
+        canvasState = { ...canvasState, ...JSON.parse(storedState) };
+    }
+
+
     const initInfo = await fetch(endpoint + '/hello').then(res => res.json());
     canvasState = { ...canvasState, ...initInfo };
     canvasEl.width = canvasState.w!;
@@ -56,10 +67,30 @@ async function init() {
             e.preventDefault();
             clearSelectedColor();
             selectedColor = colorIndex;
+            colorPlaceButton.removeAttribute('disabled')
+            colorCancelButton.removeAttribute('disabled')
             btn.classList.add('selected-color');
         })
     }
 
+    const params = new URLSearchParams(location.search);
+    if (params.has('cx')) {
+        canvasState.cx = parseInt(params.get('cx') as string);
+    }
+    if (params.has('cy')) {
+        canvasState.cy = parseInt(params.get('cy') as string);
+    }
+    if (params.has('cz')) {
+        canvasState.cz = parseInt(params.get('cz') as string);
+    }
+    if(params.has('x')){
+        canvasState.x = parseInt(params.get('x') as string);
+        canvasState.sx = canvasState.x * 100;
+    }
+    if (params.has('y')) {
+        canvasState.y = parseInt(params.get('y') as string);
+        canvasState.sy = canvasState.y * 100;
+    }
 
     // canvasState.cx = 500;
     // canvasState.cy = 500;
@@ -73,6 +104,9 @@ async function init() {
 
     updatePosition();
     updateZoom();
+    updateSelection();
+
+    updateTimeout();
 
     getState();
 
@@ -82,6 +116,7 @@ async function init() {
         }
     }
 
+    localStorage.setItem('canvas_state', JSON.stringify(canvasState));
 }
 
 // function loadChunk(cX: number, cY: number) {
@@ -105,9 +140,9 @@ async function init() {
 // }
 
 function getState() {
-    fetch(endpoint+'/state')
-        .then(res=>res.json())
-        .then(res=>{
+    fetch(endpoint + '/state')
+        .then(res => res.json())
+        .then(res => {
             for (let l of res) {
                 const split0 = l.split('_');
                 const split1 = split0[2].split('-');
@@ -120,20 +155,18 @@ function getState() {
                     ctx.drawImage(img, x * canvasState.s, y * canvasState.s);
                 };
             }
-        })
-}
 
-function loadChunk(cX: number, cY: number) {
-    const img = document.createElement('img') as HTMLImageElement;
-    img.src = endpoint + `/pngs/c_${ cX }_${ cY }.png?t=${Math.floor(Date.now()/1000)}`;
-    img.onload = function () {
-        ctx.drawImage(img, cX * canvasState.s, cY * canvasState.s);
-    };
+            localStorage.setItem('canvas_state', JSON.stringify(canvasState));
+
+            setTimeout(() => getState(), 1000);
+        })
 }
 
 function clearSelectedColor() {
     selectedColor = -1;
     document.querySelectorAll('.color-button').forEach(e => e.classList.remove('selected-color'));
+    colorPlaceButton.setAttribute('disabled', '')
+    colorCancelButton.setAttribute('disabled', '')
 }
 
 colorCancelButton.addEventListener('click', e => {
@@ -143,6 +176,7 @@ colorCancelButton.addEventListener('click', e => {
 
 async function placeSelectedColor() {
     if (selectedColor < 0) return;
+    if (Math.floor(Date.now() / 1000) < canvasState.n) return;
     fetch(endpoint + '/place', {
         method: 'PUT',
         headers: {
@@ -156,8 +190,55 @@ async function placeSelectedColor() {
         }
 
         clearSelectedColor();
+        return res.json();
+    }).then(json => {
+
+        if (json.next) {
+            canvasState.n = json.next;
+
+        }
+
+        updateTimeout();
+
+        localStorage.setItem('canvas_state', JSON.stringify(canvasState));
     })
 }
+
+function updateTimeout() {
+    clearInterval(ticker);
+    const diff = canvasState.n - Math.floor(Date.now() / 1000);
+    if (diff <= 0) return;
+
+    controlsContainer.style.display = 'none';
+    setTimeout(() => {
+        controlsContainer.style.display = 'block';
+    }, Math.floor((canvasState.n - (Date.now() / 1000)) * 1000) + 1);
+
+    ticker = setInterval(() => tickTimer(), 1000);
+    timer.textContent = '00:00';
+    tickTimer();
+    timerContainer.style.display = 'block';
+}
+
+function tickTimer() {
+    const diff = canvasState.n - Math.floor(Date.now() / 1000);
+    if (diff <= 0) {
+        clearInterval(ticker);
+        timerContainer.style.display = 'none';
+        return;
+    }
+    const m = Math.floor(diff / 60);
+    const s = diff - m * 60;
+    timer.textContent = `${ pad(`${ m }`, 2) }:${ pad(`${ s }`, 2) }`
+}
+
+function pad(s, l) {
+    while (s.length < l) {
+        s = "0" + s;
+    }
+    return s;
+}
+
 
 colorPlaceButton.addEventListener('click', e => {
     e.preventDefault();
@@ -181,7 +262,6 @@ let dragVsCanvas = { x: 0, y: 0 }
 function canvasClicked(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
-    console.log(event);
 
     const bound = (event.target as HTMLElement).getBoundingClientRect();
 
@@ -196,12 +276,12 @@ function canvasClicked(event: MouseEvent) {
 
     // canvasState.sx = Math.round((event.offsetX - (canvasState.w / 2.0))) * z;
     // canvasState.sy = Math.round((event.offsetY - (canvasState.h / 2.0))) * z;
-    console.log('click', canvasState.x, canvasState.y);
-    console.log(canvasState.sx, canvasState.sy)
     updateSelection();
 
     // ctx.fillStyle = 'blue';
     // ctx.fillRect(canvasState.x, canvasState.y, 1, 1);
+
+    updateSearchParams();
 }
 
 function scrolled(event: WheelEvent) {
@@ -219,6 +299,7 @@ function scrolled(event: WheelEvent) {
     updatePosition();
     updateZoom();
 
+    updateSearchParams();
 }
 
 function updateSelection() {
@@ -226,15 +307,22 @@ function updateSelection() {
     // selectionContainer.style.top = canvasState.y + 'px';
     selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
     // selectionContainer.style.transform = `translate3d(${canvasState.sx}px, ${canvasState.sy}px, 0) scale(100) `
+    updatePositionInfo()
 }
 
 function updateZoom() {
     zoom.style.transform = `scale(${ canvasState.cz }%)`
+    updatePositionInfo();
 }
 
 function updatePosition() {
     position.style.transform = `translateX(${ canvasState.cx }px) translateY(${ canvasState.cy }px) scale(1)`;
     // position.style.transform = `translate3d(${ canvasState.cx }px, ${ canvasState.cy }px, 0)`;
+    updatePositionInfo()
+}
+
+function updatePositionInfo() {
+    positionInfo.innerHTML = `${Math.round(canvasState.cx)},${Math.round(canvasState.cy)}@${Math.round(canvasState.cz)}<br/>${Math.round(canvasState.x)},${Math.round(canvasState.y)}`
 }
 
 function getDecimal(n: number): number {
@@ -246,11 +334,9 @@ document.addEventListener('wheel', scrolled);
 
 camera.addEventListener('mousedown', (e: MouseEvent) => {
     e.stopPropagation();
-    console.log(e.target)
     dragging = true;
     dragStart.x = e.offsetX;
     dragStart.y = e.offsetY;
-    console.log('dragStart', dragStart.x, dragStart.y);
 
     // const canvasPos = canvasEl.getBoundingClientRect();
     // dragVsCanvas.x = e.pageX - canvasPos.left;
@@ -260,6 +346,8 @@ camera.addEventListener('mouseup', (e: MouseEvent) => {
     dragging = false;
     // dragVsCanvas.x = 0;
     // dragVsCanvas.y = 0;
+
+    updateSearchParams();
 })
 document.addEventListener('mousemove', (e: MouseEvent) => {
     e.stopPropagation();
@@ -276,12 +364,21 @@ document.addEventListener('mousemove', (e: MouseEvent) => {
         // canvasState.cy += (e.offsetY - dragStart.y) * z;
         canvasState.cx += e.movementX;
         canvasState.cy += e.movementY;
-        console.log(canvasState.cx, canvasState.cy)
         // canvasState.cx = Math.max(0, canvasState.cx);
         // canvasState.cy = Math.max(0, canvasState.cy);
         updatePosition();
     }
 })
+
+function updateSearchParams() {
+    const params = new URLSearchParams(location.search);
+    params.set('cx', `${ Math.round(canvasState.cx) }`);
+    params.set('cy', `${ Math.round(canvasState.cy) }`);
+    params.set('cz', `${ Math.round(canvasState.cz) }`);
+    params.set('x', `${ Math.round(canvasState.x) }`);
+    params.set('y', `${ Math.round(canvasState.y) }`);
+    history.pushState(null, '', location.pathname + '?' + params.toString());
+}
 
 // https://davidwalsh.name/function-debounce / http://underscorejs.org/#debounce
 function debounce(func: Function, wait: number, immediate?: boolean) {
@@ -313,4 +410,5 @@ interface CState {
     cz: number;
     x: number;
     y: number;
+    n: number;
 }

@@ -203,7 +203,6 @@ app.use('/pngs', express.static('pngs'));
 
 
 app.get('/state', stateLimiter, async (req: Request, res: Response) => {
-    console.log('state',req.ip)
     let list: string[] = state;
     res.header('Cache-Control', 'max-age=1')
     res.json(list);
