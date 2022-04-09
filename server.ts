@@ -4,9 +4,12 @@ import * as fs from "fs";
 import { PNG } from "pngjs";
 import compression from "compression";
 import { createGzip, deflate, inflate } from "zlib";
+import rateLimit from "express-rate-limit";
 
 const app = express()
 const port = 3024
+
+const EPOCH_BASE = 1649000000;
 
 export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -33,6 +36,8 @@ try {
     fs.mkdirSync("pngs");
 } catch (e) {
 }
+
+const TIMEOUT = 60;
 
 const CHUNK_SIZE = 128;
 
@@ -93,36 +98,7 @@ for (let c = 0; c < COLORS.length; c++) {
 }
 
 
-
-// const CHUNKS: PNG[][] = [[]];
-// for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
-//     CHUNKS[x] = [];
-//     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-//         CHUNKS[x][y] = new PNG({
-//             width: CHUNK_SIZE,
-//             height: CHUNK_SIZE,
-//             bitDepth: 8,
-//             colorType: 2,
-//             inputHasAlpha: false
-//         })
-//         //
-//         // const bufs: Buffer[] = [];
-//         // const f = `data/c_${ x }_${ y }.bin`;
-//         // if (!fs.existsSync(f)) continue;
-//         // const stream = fs.createReadStream(f,'utf8');
-//         // stream.on("data", function (d) {
-//         //     bufs.push(d as Buffer)
-//         // });
-//         // stream.on("end", function () {
-//         //      inflate(Buffer.concat(bufs),(err,buffer)=>{
-//         //          if (err) {
-//         //              console.error(err);
-//         //          }
-//         //          CHUNKS[x][y] = buffer;
-//         //     });
-//         // });
-//     }
-// }
+let state: string[] = [];
 
 const CHUNKS: Buffer[][] = [[]]
 const LAST_UPDATES: number[][] = [];
@@ -130,26 +106,45 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
     LAST_UPDATES[x] = [];
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE);
+        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + 4);
         LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
 
         const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
         if (!fs.existsSync(f)) continue;
         const stream = fs.createReadStream(f);
-        stream.on("data", function (d) {
+        stream.on("data", (d) => {
             bufs.push(d as Buffer)
         });
-        stream.on("end", function () {
+        stream.on("end", () => {
             inflate(Buffer.concat(bufs), (err, buffer) => {
                 if (err) {
                     console.error(err);
                 }
                 CHUNKS[x][y] = buffer;
+                const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
+                LAST_UPDATES[x][y] = EPOCH_BASE + t;
             });
         });
     }
 }
+setTimeout(() => {
+    updateState();
+}, 1000);
+
+
+const placeLimiter = rateLimit({
+    windowMs: TIMEOUT*1000,
+    max: 1,
+    standardHeaders: true,
+    legacyHeaders: true
+});
+const stateLimiter =rateLimit({
+    windowMs: 20*1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: true
+})
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -174,24 +169,25 @@ function savePNG(cX: number, cY: number) {
         }
     }
 
-    // const gzip = createGzip();
-    // pipeline(png.pack(), gzip, fs.createWriteStream(`pngs/c_${ cX }_${ cY }.png`), (err) => {
-    //     if (err) {
-    //         console.warn(err);
-    //     }
-    // })
-
     const t = Math.floor(Date.now() / 1000);
     png.pack().pipe(fs.createWriteStream(`pngs/c_${ t }_${ cX }-${ cY }.png`))
     LAST_UPDATES[cX][cY] = t;
 }
 
+function updateState() {
+    state = [];
+    for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
+        for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
+            state.push(`c_${ LAST_UPDATES[x][y] }_${ x }-${ y }.png`);
+        }
+    }
+}
 
 app.get('/', async (req: Request, res: Response) => {
     res.send('Hello World!')
 })
 
-app.get('/hello', async (req: Request, res: Response) => {
+app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
     res.json({
         w: WIDTH,
         h: HEIGHT,
@@ -202,40 +198,14 @@ app.get('/hello', async (req: Request, res: Response) => {
 
 app.use('/pngs', express.static('pngs'));
 
-// app.get('/chunk/:x/:y', async (req: Request, res: Response) => {
-//     const cX = parseInt(req.params['x']);
-//     const cY = parseInt(req.params['y']);
-//
-//     if (cX < 0 || cX > WIDTH / CHUNK_SIZE || cY < 0 || cY > HEIGHT / CHUNK_SIZE) {
-//         res.status(400).end();
-//         return;
-//     }
-//
-//     const chunk = CHUNKS[cX][cY];
-//     res.header('Content-Type', 'application/octet-stream');
-//     // chunk.pack().pipe(res);
-//     res.write(chunk, 'binary');
-//     res.end();
-//
-//     // new PNG({
-//     //     width: CHUNK_SIZE,
-//     //     height: CHUNK_SIZE,
-//     //     bitDepth: 8
-//     // })
-// });
 
-app.get('/state', async (req:Request, res:Response) => {
-    let list:string[] = [];
-    for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
-        for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-            list.push(`c_${ x }-${ y }_${ LAST_UPDATES[x][y] }.png`);
-        }
-    }
+app.get('/state', stateLimiter, async (req: Request, res: Response) => {
+    let list: string[] = state;
     res.header('Cache-Control', 'max-age=1')
     res.json(list);
 })
 
-app.put('/place', async (req: Request, res: Response) => {
+app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
         return;
@@ -259,6 +229,7 @@ app.put('/place', async (req: Request, res: Response) => {
     // chunk.data[idx+1] = clr[1];
     // chunk.data[idx+2] = clr[2];
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
+    chunk.writeUint32LE(Math.floor(Date.now() / 1000) - EPOCH_BASE, CHUNK_SIZE * CHUNK_SIZE); // modified time
 
     console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
     deflate(chunk, (err, buffer) => {
@@ -268,21 +239,26 @@ app.put('/place', async (req: Request, res: Response) => {
         console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length } bytes`);
         const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`);
         stream.write(buffer);
-        stream.on("end", function () {
+        stream.on("end", () => {
             stream.end();
         });
     })
     // chunk.pack().pipe(fs.createWriteStream(`data/c_${ cX }_${ cY }.png`))
 
     savePNG(cX, cY);
+    updateState();
 
-    res.end();
+    res.json({
+        next: Math.floor(Date.now()/1000)+TIMEOUT
+    })
 });
 
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${ port }`)
-})
+setTimeout(() => {
+    app.listen(port, () => {
+        console.log(`Example app listening on port ${ port }`)
+    })
+}, 2000);
 
 
 
