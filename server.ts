@@ -6,7 +6,7 @@ import compression from "compression";
 import { createGzip, deflate, inflate } from "zlib";
 
 const app = express()
-const port = 3000
+const port = 3024
 
 export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
     res.header('Access-Control-Allow-Origin', '*');
