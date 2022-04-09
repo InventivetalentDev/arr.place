@@ -23,6 +23,7 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 };
 
+app.set('trust proxy', 1)
 app.use(compression());
 app.use(corsMiddleware)
 app.use(bodyParser.json());
@@ -185,9 +186,11 @@ function updateState() {
 
 app.get('/', async (req: Request, res: Response) => {
     res.send('Hello World!')
+
 })
 
 app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
+    console.log('hello',req.ip)
     res.json({
         w: WIDTH,
         h: HEIGHT,
@@ -200,12 +203,14 @@ app.use('/pngs', express.static('pngs'));
 
 
 app.get('/state', stateLimiter, async (req: Request, res: Response) => {
+    console.log('state',req.ip)
     let list: string[] = state;
     res.header('Cache-Control', 'max-age=1')
     res.json(list);
 })
 
 app.put('/place', placeLimiter, async (req: Request, res: Response) => {
+    console.log('place',req.ip)
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
         return;
