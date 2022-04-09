@@ -4,8 +4,6 @@ import * as fs from "fs";
 import { PNG } from "pngjs";
 import compression from "compression";
 import { createGzip, deflate, inflate } from "zlib";
-import { pipeline } from "stream";
-import path from "path";
 
 const app = express()
 const port = 3024
@@ -41,24 +39,7 @@ const CHUNK_SIZE = 128;
 const WIDTH = CHUNK_SIZE * 2;
 const HEIGHT = CHUNK_SIZE * 2;
 
-const COLORS_PNG = [
-    [255, 255, 255],
-    [0, 0, 0],
-    [0, 0, 170],
-    [0, 170, 0],
-    [0, 170, 170],
-    [170, 0, 0],
-    [170, 0, 170],
-    [255, 170, 0],
-    [170, 170, 170],
-    [85, 85, 85],
-    [85, 85, 255],
-    [85, 255, 85],
-    [85, 255, 255],
-    [255, 85, 85],
-    [255, 85, 255],
-    [255, 255, 85]
-];
+
 const COLORS = [
     '#ffffff',
     '#000000',
@@ -77,6 +58,39 @@ const COLORS = [
     '#FF55FF',
     '#FFFF55'
 ]
+
+const COLORS_PNG = [
+    [255, 255, 255],
+    [0, 0, 0],
+    [0, 0, 170],
+    [0, 170, 0],
+    [0, 170, 170],
+    [170, 0, 0],
+    [170, 0, 170],
+    [255, 170, 0],
+    [170, 170, 170],
+    [85, 85, 85],
+    [85, 85, 255],
+    [85, 255, 85],
+    [85, 255, 255],
+    [255, 85, 85],
+    [255, 85, 255],
+    [255, 255, 85]
+];
+
+
+function hexToRgb(hex): number[] {
+    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)!;
+    return [
+        parseInt(result[1], 16),
+        parseInt(result[2], 16),
+        parseInt(result[3], 16)
+    ];
+}
+
+for (let c = 0; c < COLORS.length; c++) {
+    COLORS_PNG[c] = hexToRgb(COLORS[c]);
+}
 
 // const CHUNKS: PNG[][] = [[]];
 // for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
