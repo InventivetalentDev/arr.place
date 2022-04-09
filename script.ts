@@ -1,5 +1,5 @@
-//const endpoint = 'https://api.arr.place';
-const endpoint = 'http://localho.st:3024'
+const endpoint = 'https://api.arr.place';
+// const endpoint = 'http://localho.st:3024'
 
 const mainContainer = document.getElementById('main-container') as HTMLDivElement;
 const controlsContainer = document.getElementById('controls-container') as HTMLDivElement;
@@ -74,10 +74,11 @@ async function init() {
     updatePosition();
     updateZoom();
 
+    getState();
 
     for (let cX = 0; cX < canvasState.w / canvasState.s; cX++) {
         for (let cY = 0; cY < canvasState.w / canvasState.s; cY++) {
-            loadChunk(cX, cY);
+            // loadChunk(cX, cY);
         }
     }
 
@@ -103,9 +104,28 @@ async function init() {
 //         })
 // }
 
+function getState() {
+    fetch(endpoint+'/state')
+        .then(res=>res.json())
+        .then(res=>{
+            for (let l of res) {
+                const split0 = l.split('_');
+                const split1 = split0[1].split('-');
+                const x = parseInt(split1[0]);
+                const y = parseInt(split1[1]);
+
+                const img = document.createElement('img') as HTMLImageElement;
+                img.src = endpoint + '/pngs/' + l;
+                img.onload = function () {
+                    ctx.drawImage(img, x * canvasState.s, y * canvasState.s);
+                };
+            }
+        })
+}
+
 function loadChunk(cX: number, cY: number) {
     const img = document.createElement('img') as HTMLImageElement;
-    img.src = endpoint + `/pngs/c_${ cX }_${ cY }.png`;
+    img.src = endpoint + `/pngs/c_${ cX }_${ cY }.png?t=${Math.floor(Date.now()/1000)}`;
     img.onload = function () {
         ctx.drawImage(img, cX * canvasState.s, cY * canvasState.s);
     };

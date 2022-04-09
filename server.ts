@@ -92,6 +92,8 @@ for (let c = 0; c < COLORS.length; c++) {
     COLORS_PNG[c] = hexToRgb(COLORS[c]);
 }
 
+
+
 // const CHUNKS: PNG[][] = [[]];
 // for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
 //     CHUNKS[x] = [];
@@ -123,10 +125,13 @@ for (let c = 0; c < COLORS.length; c++) {
 // }
 
 const CHUNKS: Buffer[][] = [[]]
+const LAST_UPDATES: number[][] = [];
 for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
+    LAST_UPDATES[x] = [];
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
         CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE);
+        LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
 
         const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
@@ -176,7 +181,9 @@ function savePNG(cX: number, cY: number) {
     //     }
     // })
 
-    png.pack().pipe(fs.createWriteStream(`pngs/c_${ cX }_${ cY }.png`))
+    const t = Math.floor(Date.now() / 1000);
+    png.pack().pipe(fs.createWriteStream(`pngs/c_${ cX }-${ cY }_${ t }.png`))
+    LAST_UPDATES[cX][cY] = t;
 }
 
 
@@ -216,6 +223,16 @@ app.use('/pngs', express.static('pngs'));
 //     //     bitDepth: 8
 //     // })
 // });
+
+app.get('/state', async (req:Request, res:Response) => {
+    let list:string[] = [];
+    for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
+        for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
+            list.push(`c_${ x }-${ y }_${ LAST_UPDATES[x][y] }.png`);
+        }
+    }
+    res.json(list);
+})
 
 app.put('/place', async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
