@@ -369,7 +369,7 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
             iss: 'https://arr.place',
             jti: randomUuid()
         }
-        console.log('assigned user id', userId, req.ip);
+        console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
     }
 
     delete payload['exp']; // remove old expiration

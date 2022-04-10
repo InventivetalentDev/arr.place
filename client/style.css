@@ -6,6 +6,7 @@ html, body {
     overflow: hidden;
     background-color: #383838;
     font-family: sans-serif;
+    touch-action: none;
 }
 
 body {

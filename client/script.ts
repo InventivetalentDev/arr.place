@@ -16,6 +16,7 @@ const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvasEl.getContext('2d')!;
 
 const ZOOM_FACTOR = 0.005;
+const ZOOM_FACTOR_TOUCH = 0.01
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 100;
 
@@ -44,7 +45,7 @@ async function init() {
     }
 
 
-    const initInfo = await fetch(endpoint + '/hello',{
+    const initInfo = await fetch(endpoint + '/hello', {
         credentials: 'include',
     }).then(res => res.json());
     canvasState = { ...canvasState, ...initInfo };
@@ -84,7 +85,7 @@ async function init() {
     if (params.has('cz')) {
         canvasState.cz = parseInt(params.get('cz') as string);
     }
-    if(params.has('x')){
+    if (params.has('x')) {
         canvasState.x = parseInt(params.get('x') as string);
         canvasState.sx = canvasState.x * 100;
     }
@@ -143,7 +144,7 @@ async function init() {
 let lastState: string[] = [];
 
 function getState() {
-    fetch(endpoint + '/state',{
+    fetch(endpoint + '/state', {
         credentials: 'include'
     })
         .then(res => res.json())
@@ -270,6 +271,7 @@ colorPlaceButton.addEventListener('click', e => {
 let dragging = false;
 let dragStart = { x: 0, y: 0 }
 let dragVsCanvas = { x: 0, y: 0 }
+let pinching = false;
 
 // // https://stackoverflow.com/a/18053642/6257838
 // function toCanvasCoords(clientX: number, clientY: number): { x: number, y: number } {
@@ -310,6 +312,8 @@ function scrolled(event: WheelEvent) {
     const xs = (event.clientX - canvasState.cx) / canvasState.cz;
     const ys = (event.clientY - canvasState.cy) / canvasState.cz;
 
+    console.log('scroll',event.deltaY)
+
     canvasState.cz -= event.deltaY * ZOOM_FACTOR * canvasState.cz;
     canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
     canvasState.cz = Math.min(MAX_ZOOM, canvasState.cz);
@@ -317,6 +321,10 @@ function scrolled(event: WheelEvent) {
     canvasState.cx = event.clientX - xs * canvasState.cz;
     canvasState.cy = event.clientY - ys * canvasState.cz;
 
+    afterZoomChange();
+}
+
+function afterZoomChange() {
     updatePosition();
     updateZoom();
 
@@ -343,7 +351,7 @@ function updatePosition() {
 }
 
 function updatePositionInfo() {
-    positionInfo.innerHTML = `${Math.round(canvasState.cx)},${Math.round(canvasState.cy)}@${Math.round(canvasState.cz)}<br/>${Math.round(canvasState.x)},${Math.round(canvasState.y)}`
+    positionInfo.innerHTML = `${ Math.round(canvasState.cx) },${ Math.round(canvasState.cy) }@${ Math.round(canvasState.cz) }<br/>${ Math.round(canvasState.x) },${ Math.round(canvasState.y) }`
 }
 
 function getDecimal(n: number): number {
@@ -353,24 +361,47 @@ function getDecimal(n: number): number {
 canvasEl.addEventListener('click', canvasClicked);
 document.addEventListener('wheel', scrolled);
 
-camera.addEventListener('mousedown', (e: MouseEvent) => {
+function mouseDown(e: MouseEvent | TouchEvent) {
     e.stopPropagation();
     dragging = true;
-    dragStart.x = e.offsetX;
-    dragStart.y = e.offsetY;
+    if (isMouseEvent(e)) {
+        dragStart.x = e.offsetX;
+        dragStart.y = e.offsetY;
+    }
+    if (isTouchEvent(e)) {
+        pinching = e.touches.length === 2;
+        if (pinching) {
+            onPinch(e);
+        }
+        dragStart.x = e.touches[0].clientX;
+        dragStart.y = e.touches[0].clientY;
+    }
 
     // const canvasPos = canvasEl.getBoundingClientRect();
     // dragVsCanvas.x = e.pageX - canvasPos.left;
     // dragVsCanvas.y = e.pageY - canvasPos.top;
-})
-camera.addEventListener('mouseup', (e: MouseEvent) => {
+}
+
+camera.addEventListener('mousedown', mouseDown)
+camera.addEventListener('touchstart', mouseDown);
+
+function mouseUp(e: MouseEvent | TouchEvent) {
     dragging = false;
+    pinching = false;
+    lastTouch = undefined;
+    lastDist = 0;
     // dragVsCanvas.x = 0;
     // dragVsCanvas.y = 0;
 
     updateSearchParams();
-})
-document.addEventListener('mousemove', (e: MouseEvent) => {
+}
+
+camera.addEventListener('mouseup', mouseUp);
+camera.addEventListener('touchend', mouseUp);
+
+let lastTouch: any = undefined;
+
+function mouseMove(e: MouseEvent | TouchEvent) {
     e.stopPropagation();
     e.preventDefault();
     if (dragging) {
@@ -383,13 +414,67 @@ document.addEventListener('mousemove', (e: MouseEvent) => {
         const z = canvasState.cz * 0.5;
         // canvasState.cx += (e.offsetX - dragStart.x) * z;
         // canvasState.cy += (e.offsetY - dragStart.y) * z;
-        canvasState.cx += e.movementX;
-        canvasState.cy += e.movementY;
+        if (isMouseEvent(e)) {
+            canvasState.cx += e.movementX;
+            canvasState.cy += e.movementY;
+        }
+        if (isTouchEvent(e)) {
+            pinching = e.touches.length === 2;
+            if (pinching) {
+                onPinch(e);
+            } else {
+                if (lastTouch) {
+                    canvasState.cx += e.touches[0].clientX - lastTouch.x;
+                    canvasState.cy += e.touches[0].clientY - lastTouch.y;
+                }
+
+                lastTouch = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            }
+        }
         // canvasState.cx = Math.max(0, canvasState.cx);
         // canvasState.cy = Math.max(0, canvasState.cy);
         updatePosition();
     }
-})
+}
+
+let lastDist: any = undefined;
+
+function onPinch(e: TouchEvent) {
+    // https://stackoverflow.com/a/11183333/6257838
+    // let dist = Math.hypot(
+    //     e.touches[0].pageX - e.touches[1].pageX,
+    //     e.touches[0].pageY - e.touches[1].pageY
+    // );
+    let dist = Math.sqrt(Math.pow(e.touches[1].clientX - e.touches[0].clientX, 2) + Math.pow(e.touches[1].clientY - e.touches[0].clientY, 2));
+    console.log('pinch', dist);
+
+    if (!lastDist) {
+        lastDist = dist;
+    }
+
+    let scale =(dist/lastDist);
+    console.log(scale);
+
+    const xs = (e.touches[0].clientX - canvasState.cx) / canvasState.cz;
+    const ys = (e.touches[0].clientY - canvasState.cy) / canvasState.cz;
+
+    canvasState.cz *=  scale;
+    canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
+    canvasState.cz = Math.min(MAX_ZOOM, canvasState.cz);
+
+    canvasState.cx = e.touches[0].clientX - xs * canvasState.cz;
+    canvasState.cy = e.touches[0].clientY - ys * canvasState.cz;
+
+    lastDist = dist;
+
+    afterZoomChange();
+}
+
+document.addEventListener('mousemove', mouseMove);
+document.addEventListener('touchmove', mouseMove);
 
 function updateSearchParams() {
     const params = new URLSearchParams(location.search);
@@ -418,6 +503,14 @@ function debounce(func: Function, wait: number, immediate?: boolean) {
 };
 
 init();
+
+function isMouseEvent(obj: any): obj is MouseEvent {
+    return 'offsetX' in obj;
+}
+
+function isTouchEvent(obj: any): obj is TouchEvent {
+    return 'touches' in obj;
+}
 
 interface CState {
     w: number;
