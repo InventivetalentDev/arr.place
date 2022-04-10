@@ -117,7 +117,6 @@ button {
     /*border: black solid;*/
     transform-origin: left top;
     pointer-events: none;
-    opacity: 0.8;
     transition: transform 200ms;
 }
 

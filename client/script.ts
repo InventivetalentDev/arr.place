@@ -71,6 +71,7 @@ async function init() {
             selectedColor = colorIndex;
             colorPlaceButton.removeAttribute('disabled')
             colorCancelButton.removeAttribute('disabled')
+            selectionContainer.style.backgroundColor = color;
             btn.classList.add('selected-color');
         })
     }
@@ -187,6 +188,7 @@ function clearSelectedColor() {
     document.querySelectorAll('.color-button').forEach(e => e.classList.remove('selected-color'));
     colorPlaceButton.setAttribute('disabled', '')
     colorCancelButton.setAttribute('disabled', '')
+    selectionContainer.style.backgroundColor = 'transparent';
 }
 
 colorCancelButton.addEventListener('click', e => {
