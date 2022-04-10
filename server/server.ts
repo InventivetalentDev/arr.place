@@ -196,8 +196,6 @@ app.get('/', async (req: Request, res: Response) => {
 })
 
 app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
-    console.log('hello', req.ip)
-
     let jwtPayload;
     try {
         jwtPayload = await verifyJWT(req, res);
@@ -207,6 +205,8 @@ app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
         return;
     }
     const userId = await applyJWT(req, res, jwtPayload);
+
+    console.log('hello', userId, req.ip)
 
     res.json({
         w: WIDTH,
