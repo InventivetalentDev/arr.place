@@ -45,9 +45,16 @@ async function init() {
     }
 
 
-    const initInfo = await fetch(endpoint + '/hello', {
-        credentials: 'include',
-    }).then(res => res.json());
+    let initInfo;
+    try {
+        initInfo = await fetch(endpoint + '/hello', {
+            credentials: 'include',
+        }).then(res => res.json());
+    } catch (e) {
+        console.warn(e);
+        setTimeout(() => init(), 5000);
+        return;
+    }
     canvasState = { ...canvasState, ...initInfo };
     canvasEl.width = canvasState.w!;
     canvasEl.height = canvasState.h!;
@@ -180,6 +187,10 @@ function getState() {
             if (lastState.length > 50) {
                 lastState.shift();
             }
+        })
+        .catch(err=>{
+            console.warn(err);
+            setTimeout(() => getState(), 5000);
         })
 }
 
