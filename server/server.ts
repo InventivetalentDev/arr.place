@@ -241,7 +241,6 @@ app.get('/state', stateLimiter, async (req: Request, res: Response) => {
 })
 
 app.put('/place', placeLimiter, async (req: Request, res: Response) => {
-    console.log('place', req.ip)
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
         return;
@@ -263,6 +262,9 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
         res.status(400).end();
         return;
     }
+
+    console.log('place', jwtPayload.sub, req.ip)
+
     if (req.headers['x-user'] !== jwtPayload.sub) {
         res.status(403).end();
         console.warn("user id mismatch! header:" + req.headers['x-user'] + ", token: " + jwtPayload.sub);
