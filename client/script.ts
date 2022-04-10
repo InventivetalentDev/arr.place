@@ -312,8 +312,6 @@ function scrolled(event: WheelEvent) {
     const xs = (event.clientX - canvasState.cx) / canvasState.cz;
     const ys = (event.clientY - canvasState.cy) / canvasState.cz;
 
-    console.log('scroll', event.deltaY)
-
     canvasState.cz -= event.deltaY * ZOOM_FACTOR * canvasState.cz;
     canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
     canvasState.cz = Math.min(MAX_ZOOM, canvasState.cz);
@@ -449,14 +447,12 @@ function onPinch(e: TouchEvent) {
     //     e.touches[0].pageY - e.touches[1].pageY
     // );
     let dist = Math.sqrt(Math.pow(e.touches[1].clientX - e.touches[0].clientX, 2) + Math.pow(e.touches[1].clientY - e.touches[0].clientY, 2));
-    console.log('pinch', dist);
 
     if (!lastDist) {
         lastDist = dist;
     }
 
     let scale = (dist / lastDist);
-    console.log(scale);
 
     const xs = (e.touches[0].clientX - canvasState.cx) / canvasState.cz;
     const ys = (e.touches[0].clientY - canvasState.cy) / canvasState.cz;
