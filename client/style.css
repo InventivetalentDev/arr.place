@@ -12,6 +12,14 @@ body {
     margin: 0;
 }
 
+button {
+    background-color: #ededed;
+    border: none;
+    padding: 4px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
 #debug-cross{
     position: absolute;
     left: 50%;
@@ -26,16 +34,24 @@ body {
     height: 100%;
 }
 
-#controls-container {
+.overlay {
     z-index: 100;
     position: absolute;
+    box-shadow: #0000008a 1px 1px 4px 2px;
+    background-color: #141414;
+    opacity: 0.4;
+    transition: opacity 200ms;
+}
+.overlay:hover {
+    opacity: 0.9;
+}
+
+#controls-container {
     /*background-color: rgba(128, 128, 128, 0.29);*/
     padding: 10px 20px;
     border-radius: 20px;
-    background-color: #141414;
     top: 20px;
     left: 20px;
-    box-shadow: #0000008a 1px 1px 4px 2px;
 }
 
 .color-button {
@@ -51,28 +67,20 @@ body {
 }
 
 #timer-container {
-    position: absolute;
     top: 20px;
     right: 20px;
-    z-index: 100;
-    background-color: #141414;
     color: white;
     padding: 5px 10px;
     border-radius: 50px;
-    box-shadow: #0000008a 1px 1px 4px 2px;
     font-size: 20px;
 }
 
 #position-container {
-    position: absolute;
     bottom: 20px;
     left: 20px;
-    z-index: 100;
-    background-color: #141414;
     color: white;
     padding: 10px 20px;
     border-radius: 50px;
-    box-shadow: #0000008a 1px 1px 4px 2px;
     font-size: 18px;
 }
 

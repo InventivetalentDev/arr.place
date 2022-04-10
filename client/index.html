@@ -4,12 +4,12 @@
         <title>(ar)r.place</title>
         <meta name="description" content="totally not a r/place knockoff">
 
-        <link rel="stylesheet" href="style.css?v=4">
+        <link rel="stylesheet" href="style.css?v=6">
     </head>
     <body>
 <!--        <div id="debug-cross">x</div>-->
         <div id="main-container">
-            <div id="controls-container">
+            <div id="controls-container" class="overlay">
                 <div id="colors-container">
                 </div>
                 <div id="action-container">
@@ -17,10 +17,10 @@
                     <button id="color-place-button" disabled>Place</button>
                 </div>
             </div>
-            <div id="timer-container" style="display: none">
+            <div id="timer-container" style="display: none" class="overlay">
                 <span id="timer">00:00</span>
             </div>
-            <div id="position-container">
+            <div id="position-container" class="overlay">
                 <span id="position-info"></span>
             </div>
 
