@@ -138,3 +138,17 @@ button {
     /*left: 0;*/
     transform-origin: left top;
 }
+
+#credits {
+    font-size: 10px;
+    transform: scale(0.2);
+    width: 100%;
+    color: white;
+    opacity: 0.8;
+    text-align: center;
+}
+
+#credits a {
+    text-decoration: none;
+    color: #6d6dff;
+}
