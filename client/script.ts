@@ -234,7 +234,7 @@ function updateTimeout() {
     controlsContainer.style.display = 'none';
     setTimeout(() => {
         controlsContainer.style.display = 'block';
-    }, Math.floor((canvasState.n - (Date.now() / 1000)) * 1000) + 1);
+    }, Math.ceil((canvasState.n - (Date.now() / 1000)) * 1000) + 100);
 
     ticker = setInterval(() => tickTimer(), 1000);
     timer.textContent = '00:00';
