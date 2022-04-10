@@ -312,7 +312,7 @@ function scrolled(event: WheelEvent) {
     const xs = (event.clientX - canvasState.cx) / canvasState.cz;
     const ys = (event.clientY - canvasState.cy) / canvasState.cz;
 
-    console.log('scroll',event.deltaY)
+    console.log('scroll', event.deltaY)
 
     canvasState.cz -= event.deltaY * ZOOM_FACTOR * canvasState.cz;
     canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
@@ -422,17 +422,17 @@ function mouseMove(e: MouseEvent | TouchEvent) {
             pinching = e.touches.length === 2;
             if (pinching) {
                 onPinch(e);
-            } else {
-                if (lastTouch) {
-                    canvasState.cx += e.touches[0].clientX - lastTouch.x;
-                    canvasState.cy += e.touches[0].clientY - lastTouch.y;
-                }
-
-                lastTouch = {
-                    x: e.touches[0].clientX,
-                    y: e.touches[0].clientY
-                };
             }
+            if (lastTouch) {
+                canvasState.cx += e.touches[0].clientX - lastTouch.x;
+                canvasState.cy += e.touches[0].clientY - lastTouch.y;
+            }
+
+            lastTouch = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+
         }
         // canvasState.cx = Math.max(0, canvasState.cx);
         // canvasState.cy = Math.max(0, canvasState.cy);
@@ -455,13 +455,13 @@ function onPinch(e: TouchEvent) {
         lastDist = dist;
     }
 
-    let scale =(dist/lastDist);
+    let scale = (dist / lastDist);
     console.log(scale);
 
     const xs = (e.touches[0].clientX - canvasState.cx) / canvasState.cz;
     const ys = (e.touches[0].clientY - canvasState.cy) / canvasState.cz;
 
-    canvasState.cz *=  scale;
+    canvasState.cz *= scale;
     canvasState.cz = Math.max(MIN_ZOOM, canvasState.cz);
     canvasState.cz = Math.min(MAX_ZOOM, canvasState.cz);
 
