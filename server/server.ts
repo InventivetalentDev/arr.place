@@ -295,7 +295,6 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
         return;
     }
 
-    console.log(Math.floor(Date.now() / 1000) - jwtPayload['lst'])
     if (Math.floor(Date.now() / 1000) - jwtPayload['lst'] < TIMEOUT) {
         console.warn("place too soon", req.ip);
         return res.status(429).end();
@@ -306,7 +305,6 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     const chunk = CHUNKS[cX][cY];
 
     const clr = COLORS[v];
-    console.log(clr);
 
     const iX = x - (cX * CHUNK_SIZE);
     const iY = y - (cY * CHUNK_SIZE);
