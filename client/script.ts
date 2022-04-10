@@ -1,5 +1,4 @@
-const endpoint = 'https://api.arr.place';
-// const endpoint = 'http://localho.st:3024'
+const endpoint = 'https://y.arr.place';
 
 const mainContainer = document.getElementById('main-container') as HTMLDivElement;
 const controlsContainer = document.getElementById('controls-container') as HTMLDivElement;

@@ -198,7 +198,14 @@ app.get('/', async (req: Request, res: Response) => {
 app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
     console.log('hello', req.ip)
 
-    const jwtPayload = await verifyJWT(req, res);
+    let jwtPayload;
+    try {
+        jwtPayload = await verifyJWT(req, res);
+    } catch (e) {
+        console.warn(e);
+        res.status(403).end();
+        return;
+    }
     const userId = await applyJWT(req, res, jwtPayload);
 
     res.json({
@@ -214,7 +221,14 @@ app.use('/pngs', express.static('pngs'));
 
 
 app.get('/state', stateLimiter, async (req: Request, res: Response) => {
-    const jwtPayload = await verifyJWT(req, res);
+    let jwtPayload;
+    try {
+        jwtPayload = await verifyJWT(req, res);
+    } catch (e) {
+        console.warn(e);
+        res.status(403).end();
+        return;
+    }
     if (!jwtPayload) {
         res.status(403).end();
         return;
@@ -233,7 +247,14 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
         return;
     }
 
-    const jwtPayload = await verifyJWT(req, res);
+    let jwtPayload;
+    try {
+        jwtPayload = await verifyJWT(req, res);
+    } catch (e) {
+        console.warn(e);
+        res.status(403).end();
+        return;
+    }
     if (!jwtPayload) {
         res.status(403).end();
         return;
@@ -294,6 +315,7 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     updateState();
 
     jwtPayload['lst'] = Math.floor(Date.now() / 1000);
+    jwtPayload['cnt']++;
     await applyJWT(req, res, jwtPayload);
 
     res.json({
@@ -322,10 +344,15 @@ async function verifyJWT(req: Request, res: Response): Promise<JwtPayload | unde
             })
         });
         const jwt = await verifyPromise;
-        if (!jwt || !jwt.payload.sub || !jwt.payload['jti'] || !jwt.payload['lst']) {
+        if (!jwt || !jwt.payload.sub || !jwt.payload['jti'] || !jwt.payload['lst'] || !('cnt' in (jwt.payload as JwtPayload))) {
             res.status(400);
             throw new Error('invalid JWT');
         }
+
+        if (jwt.payload['ip'] !== req.ip) {
+            console.log(jwt.payload.sub + " changed ip " + jwt.payload['ip'] + " -> " + req.ip);
+        }
+
         return jwt.payload as JwtPayload;
     }
     return undefined;
@@ -337,6 +364,8 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
         payload = {
             sub: userId,
             lst: Math.floor(Date.now() / 1000) - TIMEOUT,
+            cnt: 0,
+            ip: req.ip,
             iss: 'https://arr.place',
             jti: randomUuid()
         }
@@ -350,7 +379,6 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
     res.cookie('access_token', token, {
         domain: '.arr.place',
         secure: true,
-        httpOnly: true,
         maxAge: 31556926000
     })
 
