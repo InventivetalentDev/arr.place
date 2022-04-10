@@ -140,6 +140,8 @@ async function init() {
 //         })
 // }
 
+let lastState: string[] = [];
+
 function getState() {
     fetch(endpoint + '/state',{
         credentials: 'include'
@@ -147,6 +149,11 @@ function getState() {
         .then(res => res.json())
         .then(res => {
             for (let l of res) {
+                if (lastState.indexOf(l) !== -1) {
+                    continue;
+                }
+                lastState.push(l);
+
                 const split0 = l.split('_');
                 const split1 = split0[2].split('-');
                 const x = parseInt(split1[0]);
@@ -156,12 +163,21 @@ function getState() {
                 img.src = endpoint + '/pngs/' + l;
                 img.onload = function () {
                     ctx.drawImage(img, x * canvasState.s, y * canvasState.s);
+                    setTimeout(() => {
+                        img.remove();
+                    }, 10000);
                 };
+                img.style.display = 'none';
+                document.body.append(img);
             }
 
             localStorage.setItem('canvas_state', JSON.stringify(canvasState));
 
             setTimeout(() => getState(), 1000);
+
+            if (lastState.length > 50) {
+                lastState.shift();
+            }
         })
 }
 
