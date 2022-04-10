@@ -5,6 +5,11 @@ import { PNG } from "pngjs";
 import compression from "compression";
 import { createGzip, deflate, inflate } from "zlib";
 import rateLimit from "express-rate-limit";
+import { v4 as randomUuid } from "uuid";
+import JWT, { Jwt, JwtPayload } from "jsonwebtoken";
+import cookieParser from "cookie-parser";
+
+const jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key');
 
 const app = express()
 const port = 3024
@@ -12,11 +17,12 @@ const port = 3024
 const EPOCH_BASE = 1649000000;
 
 export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Origin', 'https://arr.place');
+    res.header("Access-Control-Allow-Credentials", "true");
     if (req.method === 'OPTIONS') {
-        res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
-        res.header("Access-Control-Allow-Headers", "X-Requested-With, Accept, Content-Type, Origin");
-        res.header("Access-Control-Request-Headers", "X-Requested-With, Accept, Content-Type, Origin");
+        res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User");
+        res.header("Access-Control-Request-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User");
         return res.sendStatus(200);
     } else {
         return next();
@@ -26,6 +32,7 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
 app.set('trust proxy', 1)
 app.use(compression());
 app.use(corsMiddleware)
+app.use(cookieParser())
 app.use(bodyParser.json());
 
 try {
@@ -135,13 +142,13 @@ setTimeout(() => {
 
 
 const placeLimiter = rateLimit({
-    windowMs: TIMEOUT*1000,
+    windowMs: TIMEOUT * 1000,
     max: 1,
     standardHeaders: true,
     legacyHeaders: true
 });
-const stateLimiter =rateLimit({
-    windowMs: 20*1000,
+const stateLimiter = rateLimit({
+    windowMs: 20 * 1000,
     max: 20,
     standardHeaders: true,
     legacyHeaders: true
@@ -186,16 +193,20 @@ function updateState() {
 
 app.get('/', async (req: Request, res: Response) => {
     res.send('Hello World!')
-
 })
 
 app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
-    console.log('hello',req.ip)
+    console.log('hello', req.ip)
+
+    const jwtPayload = await verifyJWT(req, res);
+    const userId = await applyJWT(req, res, jwtPayload);
+
     res.json({
         w: WIDTH,
         h: HEIGHT,
         c: COLORS,
-        s: CHUNK_SIZE
+        s: CHUNK_SIZE,
+        u: userId
     })
 });
 
@@ -203,22 +214,52 @@ app.use('/pngs', express.static('pngs'));
 
 
 app.get('/state', stateLimiter, async (req: Request, res: Response) => {
+    const jwtPayload = await verifyJWT(req, res);
+    if (!jwtPayload) {
+        res.status(403).end();
+        return;
+    }
+    await applyJWT(req, res, jwtPayload);
+
     let list: string[] = state;
     res.header('Cache-Control', 'max-age=1')
     res.json(list);
 })
 
 app.put('/place', placeLimiter, async (req: Request, res: Response) => {
-    console.log('place',req.ip)
+    console.log('place', req.ip)
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
         return;
     }
+
+    const jwtPayload = await verifyJWT(req, res);
+    if (!jwtPayload) {
+        res.status(403).end();
+        return;
+    }
+    if (!req.headers['x-user']) {
+        res.status(400).end();
+        return;
+    }
+    if (req.headers['x-user'] !== jwtPayload.sub) {
+        res.status(403).end();
+        console.warn("user id mismatch! header:" + req.headers['x-user'] + ", token: " + jwtPayload.sub);
+        return;
+    }
+
     const [x, y, v] = req.body;
     if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || v < 0 || v > COLORS.length) {
         res.status(400).end();
         return;
     }
+
+    console.log(Math.floor(Date.now() / 1000) - jwtPayload['lst'])
+    if (Math.floor(Date.now() / 1000) - jwtPayload['lst'] < TIMEOUT) {
+        console.warn("place too soon", req.ip);
+        return res.status(429).end();
+    }
+
     const cX = Math.floor(x / CHUNK_SIZE);
     const cY = Math.floor(y / CHUNK_SIZE);
     const chunk = CHUNKS[cX][cY];
@@ -252,10 +293,69 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     savePNG(cX, cY);
     updateState();
 
+    jwtPayload['lst'] = Math.floor(Date.now() / 1000);
+    await applyJWT(req, res, jwtPayload);
+
     res.json({
-        next: Math.floor(Date.now()/1000)+TIMEOUT
+        next: Math.floor(Date.now() / 1000) + TIMEOUT
     })
 });
+
+async function verifyJWT(req: Request, res: Response): Promise<JwtPayload | undefined> {
+    const existingCookie = req.cookies?.['access_token'];
+    if (existingCookie) {
+        const verifyPromise = new Promise<Jwt>((resolve, reject) => {
+            JWT.verify(existingCookie, jwtPrivateKey, {
+                issuer: 'https://arr.place',
+                maxAge: '1y',
+                complete: true
+            }, (err, jwt) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                if (!jwt) {
+                    reject(new Error('invalid JWT'));
+                    return;
+                }
+                resolve(jwt);
+            })
+        });
+        const jwt = await verifyPromise;
+        if (!jwt || !jwt.payload.sub || !jwt.payload['jti'] || !jwt.payload['lst']) {
+            res.status(400);
+            throw new Error('invalid JWT');
+        }
+        return jwt.payload as JwtPayload;
+    }
+    return undefined;
+}
+
+async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Promise<string> {
+    if (!payload) {
+        const userId = randomUuid();
+        payload = {
+            sub: userId,
+            lst: Math.floor(Date.now() / 1000) - TIMEOUT,
+            iss: 'https://arr.place',
+            jti: randomUuid()
+        }
+        console.log('assigned user id', userId, req.ip);
+    }
+
+    delete payload['exp']; // remove old expiration
+    const token = JWT.sign(payload, jwtPrivateKey, {
+        expiresIn: '1y'
+    })
+    res.cookie('access_token', token, {
+        domain: '.arr.place',
+        secure: true,
+        httpOnly: true,
+        maxAge: 31556926000
+    })
+
+    return payload.sub!;
+}
 
 
 setTimeout(() => {

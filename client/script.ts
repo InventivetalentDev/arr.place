@@ -45,7 +45,9 @@ async function init() {
     }
 
 
-    const initInfo = await fetch(endpoint + '/hello').then(res => res.json());
+    const initInfo = await fetch(endpoint + '/hello',{
+        credentials: 'include',
+    }).then(res => res.json());
     canvasState = { ...canvasState, ...initInfo };
     canvasEl.width = canvasState.w!;
     canvasEl.height = canvasState.h!;
@@ -140,7 +142,9 @@ async function init() {
 // }
 
 function getState() {
-    fetch(endpoint + '/state')
+    fetch(endpoint + '/state',{
+        credentials: 'include'
+    })
         .then(res => res.json())
         .then(res => {
             for (let l of res) {
@@ -180,8 +184,10 @@ async function placeSelectedColor() {
     fetch(endpoint + '/place', {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-User': canvasState.u!
         },
+        credentials: 'include',
         body: JSON.stringify([canvasState.x, canvasState.y, selectedColor])
     }).then(res => {
         if (res.status === 200) {
@@ -411,4 +417,5 @@ interface CState {
     x: number;
     y: number;
     n: number;
+    u?: string;
 }
