@@ -15,7 +15,7 @@ const selectionContainer = document.getElementById('selection-container') as HTM
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvasEl.getContext('2d')!;
 
-const ZOOM_FACTOR = 0.005;
+const ZOOM_FACTOR = 0.001;
 const ZOOM_FACTOR_TOUCH = 0.01
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 100;
