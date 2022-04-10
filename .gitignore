@@ -3,6 +3,11 @@
 
 *data/*
 *node_modules
-*.d.ts
-*.js
-*.js.map
+
+*server.d.ts
+*server.js
+*server.js.map
+
+*script.d.ts
+*script.js
+*script.js.map
