@@ -1,0 +1,14 @@
+{
+  "name": "",
+  "version": "",
+  "dependencies": {
+  },
+  "scripts": {
+    "compile": "tsc",
+    "watch": "tsc -w",
+    "build": "npm run compile"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.3"
+  }
+}

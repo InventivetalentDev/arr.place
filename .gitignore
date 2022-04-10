@@ -1,8 +1,8 @@
 *.idea/
 *.iws
 
-data/*
-node_modules
+*data/*
+*node_modules
 *.d.ts
 *.js
 *.js.map
