@@ -390,6 +390,8 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
         console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
     }
 
+    payload['ip'] = req.ip;
+
     delete payload['exp']; // remove old expiration
     const token = JWT.sign(payload, jwtPrivateKey, {
         expiresIn: '1y'
@@ -408,7 +410,7 @@ setTimeout(() => {
     app.listen(port, () => {
         console.log(`Example app listening on port ${ port }`)
     })
-}, 2000);
+}, 1000);
 
 
 
