@@ -6,6 +6,7 @@
     "compression": "^1.7.4",
     "express": "^4.17.3",
     "express-rate-limit": "^6.3.0",
+    "jsonwebtoken": "^8.5.1",
     "pngjs": "^6.0.0"
   },
   "scripts": {
