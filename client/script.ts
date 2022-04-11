@@ -255,6 +255,8 @@ function updateTimeout() {
     timer.textContent = '00:00';
     tickTimer();
     timerContainer.style.display = 'block';
+
+    selectionContainer.style.display = 'none';
 }
 
 function tickTimer() {
@@ -284,6 +286,7 @@ colorPlaceButton.addEventListener('click', e => {
 
 
 let dragging = false;
+let dragged = false;
 let dragStart = { x: 0, y: 0 }
 let dragVsCanvas = { x: 0, y: 0 }
 let pinching = false;
@@ -298,6 +301,10 @@ let pinching = false;
 // }
 
 function canvasClicked(event: MouseEvent) {
+    if (dragged) {
+        return;
+    }
+
     event.stopPropagation();
     event.preventDefault();
 
@@ -438,6 +445,9 @@ camera.addEventListener('touchstart', mouseDown);
 
 function mouseUp(e: MouseEvent | TouchEvent) {
     dragging = false;
+    setTimeout(() => {
+        dragged = false;
+    }, 1);
     pinching = false;
     lastTouch = undefined;
     lastDist = 0;
@@ -456,6 +466,7 @@ function mouseMove(e: MouseEvent | TouchEvent) {
     e.stopPropagation();
     e.preventDefault();
     if (dragging) {
+        dragged = true;
         // if (!e.movementX || !e.movementY) return;
         // console.log(e.target)
         // console.log('dragMove', dragStart.x, dragStart.y);
