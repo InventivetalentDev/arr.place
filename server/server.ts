@@ -51,6 +51,9 @@ const TIMEOUT = 60;
 
 const CHUNK_SIZE = 128;
 
+const MOD_SIZE = 4;
+const USER_SIZE = 16;
+
 const WIDTH = CHUNK_SIZE * 2;
 const HEIGHT = CHUNK_SIZE * 2;
 
@@ -129,16 +132,19 @@ let state: string[] = [];
 
 const CHUNKS: Buffer[][] = [[]]
 const LAST_UPDATES: number[][] = [];
+const LAST_USERS: string[][] = [];
 for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
     LAST_UPDATES[x] = [];
+    LAST_USERS[x] = [];
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + 4);
+        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE + USER_SIZE);
         LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
 
         const bufs: Buffer[] = [];
         const f = `data/c_${ x }_${ y }.bin`;
         if (!fs.existsSync(f)) continue;
+        fs.copyFileSync(f, f + '.' + (Math.floor(Date.now() / 1000)) + '.bck'); // backup
         const stream = fs.createReadStream(f);
         stream.on("data", (d) => {
             bufs.push(d as Buffer)
@@ -149,8 +155,22 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
                     console.error(err);
                 }
                 CHUNKS[x][y] = buffer;
-                const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
-                LAST_UPDATES[x][y] = EPOCH_BASE + t;
+                if (buffer.length > CHUNK_SIZE * CHUNK_SIZE) {
+                    try {
+                        const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
+                        LAST_UPDATES[x][y] = EPOCH_BASE + t;
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
+                if (buffer.length > CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE) {
+                    try {
+                        const u = buffer.toString('hex', CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE, CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE + USER_SIZE); // user
+                        LAST_USERS[x][y] = u;
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
             });
         });
     }
@@ -260,6 +280,20 @@ app.get('/state', stateLimiter, async (req: Request, res: Response) => {
     res.json(list);
 })
 
+app.get('/info/:x/:y', async (req: Request, res: Response) => {
+    const x = parseInt(req.params['x']);
+    const y = parseInt(req.params['y']);
+    if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
+        res.status(400).end();
+        return;
+    }
+
+    res.json({
+        mod: LAST_UPDATES[x][y],
+        usr: LAST_USERS[x][y]?.substring(8, 8 + 16),
+    })
+})
+
 app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
         res.status(400).end();
@@ -316,6 +350,7 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     // chunk.data[idx+2] = clr[2];
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
     chunk.writeUint32LE(Math.floor(Date.now() / 1000) - EPOCH_BASE, CHUNK_SIZE * CHUNK_SIZE); // modified time
+    chunk.write(stripUuid(jwtPayload.sub), CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE, 'hex'); // user
 
     console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
     deflate(chunk, (err, buffer) => {
@@ -333,6 +368,8 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
 
     savePNG(cX, cY);
     updateState();
+
+    LAST_USERS[cX][cY] = stripUuid(jwtPayload.sub);
 
     jwtPayload['lst'] = Math.floor(Date.now() / 1000);
     jwtPayload['cnt']++;
@@ -407,6 +444,15 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
     return payload.sub!;
 }
 
+
+export function stripUuid(uuid: string): string {
+    return uuid.replace(/-/g, "");
+}
+
+export function addDashesToUuid(uuid: string): string {
+    if (uuid.length >= 36) return uuid; // probably already has dashes
+    return uuid.substr(0, 8) + "-" + uuid.substr(8, 4) + "-" + uuid.substr(12, 4) + "-" + uuid.substr(16, 4) + "-" + uuid.substr(20);
+}
 
 setTimeout(() => {
     app.listen(port, () => {
