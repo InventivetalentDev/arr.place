@@ -132,13 +132,11 @@ let state: string[] = [];
 
 const CHUNKS: Buffer[][] = [[]]
 const LAST_UPDATES: number[][] = [];
-const LAST_USERS: string[][] = [];
 for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
     CHUNKS[x] = [];
     LAST_UPDATES[x] = [];
-    LAST_USERS[x] = [];
     for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE + USER_SIZE);
+        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE);
         LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
 
         const bufs: Buffer[] = [];
@@ -159,14 +157,6 @@ for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
                     try {
                         const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
                         LAST_UPDATES[x][y] = EPOCH_BASE + t;
-                    } catch (e) {
-                        console.warn(e);
-                    }
-                }
-                if (buffer.length > CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE) {
-                    try {
-                        const u = buffer.toString('hex', CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE, CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE + USER_SIZE); // user
-                        LAST_USERS[x][y] = u;
                     } catch (e) {
                         console.warn(e);
                     }
@@ -280,19 +270,18 @@ app.get('/state', stateLimiter, async (req: Request, res: Response) => {
     res.json(list);
 })
 
-app.get('/info/:x/:y', async (req: Request, res: Response) => {
-    const x = parseInt(req.params['x']);
-    const y = parseInt(req.params['y']);
-    if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
-        res.status(400).end();
-        return;
-    }
-
-    res.json({
-        mod: LAST_UPDATES[x][y],
-        usr: LAST_USERS[x][y]?.substring(8, 8 + 16),
-    })
-})
+// app.get('/info/:x/:y', async (req: Request, res: Response) => {
+//     const x = parseInt(req.params['x']);
+//     const y = parseInt(req.params['y']);
+//     if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
+//         res.status(400).end();
+//         return;
+//     }
+//
+//     res.json({
+//         mod: LAST_UPDATES[x][y]
+//     })
+// })
 
 app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     if (!req.body || req.body.length !== 3) {
@@ -350,7 +339,6 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
     // chunk.data[idx+2] = clr[2];
     chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
     chunk.writeUint32LE(Math.floor(Date.now() / 1000) - EPOCH_BASE, CHUNK_SIZE * CHUNK_SIZE); // modified time
-    chunk.write(stripUuid(jwtPayload.sub), CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE, 'hex'); // user
 
     console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
     deflate(chunk, (err, buffer) => {
@@ -368,8 +356,6 @@ app.put('/place', placeLimiter, async (req: Request, res: Response) => {
 
     savePNG(cX, cY);
     updateState();
-
-    LAST_USERS[cX][cY] = stripUuid(jwtPayload.sub);
 
     jwtPayload['lst'] = Math.floor(Date.now() / 1000);
     jwtPayload['cnt']++;
