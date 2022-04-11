@@ -4,8 +4,8 @@
   "scripts": {
     "clean": "rm -rf dist",
     "compile": "tsc",
-    "watch": "tsc -w",
     "pack": "webpack",
+    "watch": "webpack --watch",
     "build": "npm run clean && npm run pack"
   },
   "devDependencies": {

@@ -100,13 +100,6 @@ async function init() {
         canvasState.sy = canvasState.y * 100;
     }
 
-    // canvasState.cx = 500;
-    // canvasState.cy = 500;
-
-    // ctx.translate(canvasEl.width / 2, canvasEl.height / 2);
-    // ctx.scale(canvasState.cz, canvasState.cz);
-    // ctx.translate(-canvasEl.width / 2 + canvasState.cx, -canvasEl.height / 2 + canvasState.cy);
-
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
 
@@ -118,34 +111,8 @@ async function init() {
 
     getState();
 
-    for (let cX = 0; cX < canvasState.w / canvasState.s; cX++) {
-        for (let cY = 0; cY < canvasState.w / canvasState.s; cY++) {
-            // loadChunk(cX, cY);
-        }
-    }
-
     localStorage.setItem('canvas_state', JSON.stringify(canvasState));
 }
-
-// function loadChunk(cX: number, cY: number) {
-//     fetch(endpoint + `/chunk/${ cX }/${ cY }`)
-//         .then(res => res.arrayBuffer())
-//         .then(buf => {
-//             const data = new Uint8Array(buf);
-//             for (let x = 0; x < canvasState.s; x++) {
-//                 for (let y = 0; y < canvasState.s; y++) {
-//                     const iX = x + (cX * canvasState.s);
-//                     const iY = y + (cY * canvasState.s);
-//                     const v = data[(y * canvasState.s) + x];
-//                     ctx.fillStyle = canvasState.c[v];
-//                     ctx.fillRect(iX, iY, 1, 1);
-//                     if (v > 0) {
-//                         console.log(v)
-//                     }
-//                 }
-//             }
-//         })
-// }
 
 let lastState: string[] = [];
 
@@ -289,15 +256,6 @@ let dragStart = { x: 0, y: 0 }
 let dragVsCanvas = { x: 0, y: 0 }
 let pinching = false;
 
-// // https://stackoverflow.com/a/18053642/6257838
-// function toCanvasCoords(clientX: number, clientY: number): { x: number, y: number } {
-//     // const bodyRect = document.body.getBoundingClientRect();
-//     // const canvasRect = canvasEl.getBoundingClientRect();
-//     const x = clientX - canvasRect.left +bodyRect.left;
-//     const y = clientY - canvasRect.top+bodyRect.top;
-//     return { x, y };
-// }
-
 function canvasClicked(event: MouseEvent) {
     if (dragged) {
         return;
@@ -317,8 +275,6 @@ function canvasClicked(event: MouseEvent) {
     canvasState.sx = canvasState.x * z;
     canvasState.sy = canvasState.y * z;
 
-    // canvasState.sx = Math.round((event.offsetX - (canvasState.w / 2.0))) * z;
-    // canvasState.sy = Math.round((event.offsetY - (canvasState.h / 2.0))) * z;
     updateSelection();
 
 
@@ -327,9 +283,6 @@ function canvasClicked(event: MouseEvent) {
         controlsContainer.style.display = 'block';
     }
 
-    // ctx.fillStyle = 'blue';
-    // ctx.fillRect(canvasState.x, canvasState.y, 1, 1);
-
     updateSearchParams();
 }
 
@@ -337,7 +290,6 @@ function outsideCanvasClicked(event: MouseEvent) {
     event.stopPropagation();
     event.preventDefault();
 
-    console.log(event);
     if (event.composedPath().indexOf(canvasEl) !== -1 || event.composedPath().indexOf(controlsContainer) !== -1) {
         return;
     }
@@ -373,15 +325,12 @@ function afterZoomChange() {
 }
 
 function updateSelection() {
-    // selectionContainer.style.left = canvasState.x + 'px';
-    // selectionContainer.style.top = canvasState.y + 'px';
     if (canvasState.sx >= 0 && canvasState.sy >= 0) {
         selectionContainer.style.display = 'block';
         selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
     } else {
         selectionContainer.style.display = 'none';
     }
-    // selectionContainer.style.transform = `translate3d(${canvasState.sx}px, ${canvasState.sy}px, 0) scale(100) `
     updatePositionInfo()
 }
 
@@ -399,7 +348,6 @@ function updatePosition() {
 function updatePositionInfo() {
     positionInfo.innerHTML = `${ Math.round(canvasState.cx) },${ Math.round(canvasState.cy) }@${ Math.round(canvasState.cz) }<br/>${ Math.round(canvasState.x) },${ Math.round(canvasState.y) }`
 }
-
 
 
 canvasEl.addEventListener('click', canvasClicked);
@@ -431,9 +379,6 @@ function mouseDown(e: MouseEvent | TouchEvent) {
         dragStart.y = e.touches[0].clientY;
     }
 
-    // const canvasPos = canvasEl.getBoundingClientRect();
-    // dragVsCanvas.x = e.pageX - canvasPos.left;
-    // dragVsCanvas.y = e.pageY - canvasPos.top;
 }
 
 camera.addEventListener('mousedown', mouseDown)
@@ -463,15 +408,6 @@ function mouseMove(e: MouseEvent | TouchEvent) {
     e.preventDefault();
     if (dragging) {
         dragged = true;
-        // if (!e.movementX || !e.movementY) return;
-        // console.log(e.target)
-        // console.log('dragMove', dragStart.x, dragStart.y);
-        // canvasState.cx -= e.pageX - dragVsCanvas.x;
-        // canvasState.cy -= e.pageY - dragVsCanvas.y;
-        // e.stopImmediatePropagation()
-        const z = canvasState.cz * 0.5;
-        // canvasState.cx += (e.offsetX - dragStart.x) * z;
-        // canvasState.cy += (e.offsetY - dragStart.y) * z;
         if (isMouseEvent(e)) {
             canvasState.cx += e.movementX;
             canvasState.cy += e.movementY;
@@ -492,8 +428,6 @@ function mouseMove(e: MouseEvent | TouchEvent) {
             };
 
         }
-        // canvasState.cx = Math.max(0, canvasState.cx);
-        // canvasState.cy = Math.max(0, canvasState.cy);
         updatePosition();
     }
 }
@@ -501,11 +435,6 @@ function mouseMove(e: MouseEvent | TouchEvent) {
 let lastDist: any = undefined;
 
 function onPinch(e: TouchEvent) {
-    // https://stackoverflow.com/a/11183333/6257838
-    // let dist = Math.hypot(
-    //     e.touches[0].pageX - e.touches[1].pageX,
-    //     e.touches[0].pageY - e.touches[1].pageY
-    // );
     let dist = Math.sqrt(Math.pow(e.touches[1].clientX - e.touches[0].clientX, 2) + Math.pow(e.touches[1].clientY - e.touches[0].clientY, 2));
 
     if (!lastDist) {
@@ -544,7 +473,6 @@ function updateSearchParams() {
 
 
 init();
-
 
 
 interface CState {
