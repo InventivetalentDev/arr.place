@@ -246,7 +246,7 @@ function updateTimeout() {
 
     controlsContainer.style.display = 'none';
     setTimeout(() => {
-        if(canvasState.sx>=0&&canvasState.sy>=0) {
+        if (canvasState.sx >= 0 && canvasState.sy >= 0) {
             controlsContainer.style.display = 'block';
         }
     }, Math.ceil((canvasState.n - (Date.now() / 1000)) * 1000) + 100);
@@ -373,7 +373,7 @@ function updateSelection() {
     if (canvasState.sx >= 0 && canvasState.sy >= 0) {
         selectionContainer.style.display = 'block';
         selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
-    }else{
+    } else {
         selectionContainer.style.display = 'none';
     }
     // selectionContainer.style.transform = `translate3d(${canvasState.sx}px, ${canvasState.sy}px, 0) scale(100) `
@@ -402,6 +402,15 @@ function getDecimal(n: number): number {
 canvasEl.addEventListener('click', canvasClicked);
 document.addEventListener('click', outsideCanvasClicked)
 document.addEventListener('wheel', scrolled);
+
+colorsContainer.addEventListener('wheel', e => {
+    e.stopPropagation();
+    if (e.deltaY > 0) {
+        (colorsContainer as HTMLDivElement).scrollLeft += 100;
+    } else {
+        (colorsContainer as HTMLDivElement).scrollLeft -= 100;
+    }
+})
 
 function mouseDown(e: MouseEvent | TouchEvent) {
     e.stopPropagation();

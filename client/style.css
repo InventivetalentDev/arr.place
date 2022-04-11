@@ -1,8 +1,8 @@
 html, body {
     width: 100%;
     height: 100%;
-    top:0;
-    left:0;
+    top: 0;
+    left: 0;
     overflow: hidden;
     background-color: #383838;
     font-family: sans-serif;
@@ -21,7 +21,7 @@ button {
     cursor: pointer;
 }
 
-#debug-cross{
+#debug-cross {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -29,8 +29,8 @@ button {
 }
 
 #main-container {
-    top:0;
-    left:0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
 }
@@ -43,6 +43,7 @@ button {
     opacity: 0.4;
     transition: opacity 200ms;
 }
+
 .overlay:hover {
     opacity: 0.9;
 }
@@ -54,15 +55,23 @@ button {
     top: 20px;
     left: 20px;
     user-select: none;
-    max-width: 60vw;
+    max-width: 50vw;
+}
+
+@media (orientation: portrait) {
+    #controls-container {
+        max-width: 85vw;
+    }
 }
 
 #colors-container {
     white-space: nowrap;
     overflow-x: auto;
+    margin-bottom: 5px;
     /*-ms-overflow-style: none;*/
     /*scrollbar-width: none;*/
 }
+
 #colors-container::-webkit-scrollbar {
     /*display: none;*/
 }
@@ -72,9 +81,10 @@ button {
     display: inline-block;
     width: 20px;
     height: 20px;
-    margin:  10px;
+    margin: 10px;
     box-shadow: #818181 0 0 3px 3px
 }
+
 .color-button.selected-color {
     box-shadow: #eeeeee 0 0 6px 6px
 }
@@ -99,8 +109,8 @@ button {
 }
 
 #camera {
-    top:0;
-    left:0;
+    top: 0;
+    left: 0;
     user-select: none;
     display: block;
     height: 100%;
@@ -131,7 +141,7 @@ button {
     transition: transform 200ms;
 }
 
-#selection-container>svg {
+#selection-container > svg {
     width: 1px;
     height: 1px;
 }
