@@ -8,13 +8,15 @@ import rateLimit from "express-rate-limit";
 import { v4 as randomUuid } from "uuid";
 import JWT, { Jwt, JwtPayload } from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import { CHUNK_SIZE, COLORS, COLORS_PNG, EPOCH_BASE, HEIGHT, MOD_SIZE, TIMEOUT, WIDTH } from "./data";
+import { placeLimiter, stateLimiter } from "./ratelimit";
 
 const jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key');
 
 const app = express()
 const port = 3024
 
-const EPOCH_BASE = 1649000000;
+
 const VERSION = Math.floor(Date.now() / 1000) - EPOCH_BASE;
 console.log('version', VERSION);
 
@@ -45,86 +47,6 @@ try {
 try {
     fs.mkdirSync("pngs");
 } catch (e) {
-}
-
-const TIMEOUT = 60;
-
-const CHUNK_SIZE = 128;
-
-const MOD_SIZE = 4;
-const USER_SIZE = 16;
-
-const WIDTH = CHUNK_SIZE * 2;
-const HEIGHT = CHUNK_SIZE * 2;
-
-
-// const COLORS = [
-//     '#FFFFFF',
-//     '#000000',
-//     '#808080',
-//     '#C0C0C0',
-//     '#FF0000',
-//     '#800000',
-//     '#00FF00',
-//     '#008000',
-//     '#0000FF',
-//     '#000080',
-//     '#FFFF00',
-//     '#808000',
-//     '#00FFFF',
-//     '#008080',
-//     '#FF00FF',
-//     '#800080',
-// ]
-const COLORS = [
-    '#ffffff',
-    '#d4d7d9',
-    '#898d90',
-    '#515252',
-    '#000000',
-    '#ffb470',
-    '#9c6926',
-    '#6d482f',
-    '#ff99aa',
-    '#ff3881',
-    '#de107f',
-    '#e4abff',
-    '#b44ac0',
-    '#811e9f',
-    '#94b3ff',
-    '#6a5cff',
-    '#493ac1',
-    '#51e9f4',
-    '#3690ea',
-    '#2450a4',
-    '#00ccc0',
-    '#009eaa',
-    '#00756f',
-    '#7eed56',
-    '#00cc78',
-    '#00a368',
-    '#fff8b8',
-    '#ffd635',
-    '#ffa800',
-    '#ff4500',
-    '#be0039',
-    '#6d001a',
-]
-
-const COLORS_PNG: number[][] = [];
-
-
-function hexToRgb(hex): number[] {
-    let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)!;
-    return [
-        parseInt(result[1], 16),
-        parseInt(result[2], 16),
-        parseInt(result[3], 16)
-    ];
-}
-
-for (let c = 0; c < COLORS.length; c++) {
-    COLORS_PNG[c] = hexToRgb(COLORS[c]);
 }
 
 
@@ -169,19 +91,6 @@ setTimeout(() => {
     updateState();
 }, 1000);
 
-
-const placeLimiter = rateLimit({
-    windowMs: TIMEOUT * 1000,
-    max: 1,
-    standardHeaders: true,
-    legacyHeaders: true
-});
-const stateLimiter = rateLimit({
-    windowMs: 20 * 1000,
-    max: 20,
-    standardHeaders: true,
-    legacyHeaders: true
-})
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -430,15 +339,6 @@ async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Prom
     return payload.sub!;
 }
 
-
-export function stripUuid(uuid: string): string {
-    return uuid.replace(/-/g, "");
-}
-
-export function addDashesToUuid(uuid: string): string {
-    if (uuid.length >= 36) return uuid; // probably already has dashes
-    return uuid.substr(0, 8) + "-" + uuid.substr(8, 4) + "-" + uuid.substr(12, 4) + "-" + uuid.substr(16, 4) + "-" + uuid.substr(20);
-}
 
 setTimeout(() => {
     app.listen(port, () => {
