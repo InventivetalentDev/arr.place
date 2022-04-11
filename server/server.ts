@@ -15,6 +15,8 @@ const app = express()
 const port = 3024
 
 const EPOCH_BASE = 1649000000;
+const VERSION = Math.floor(Date.now() / 1000) - EPOCH_BASE;
+console.log('version', VERSION);
 
 export const corsMiddleware = (req: Request, res: Response, next: NextFunction) => {
     res.header('Access-Control-Allow-Origin', 'https://arr.place');
@@ -106,8 +108,7 @@ const COLORS = [
     '#6d001a',
 ]
 
-const COLORS_PNG:number[][] = [
-];
+const COLORS_PNG: number[][] = [];
 
 
 function hexToRgb(hex): number[] {
@@ -231,7 +232,8 @@ app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
         h: HEIGHT,
         c: COLORS,
         s: CHUNK_SIZE,
-        u: userId
+        u: userId,
+        v: VERSION
     })
 });
 
