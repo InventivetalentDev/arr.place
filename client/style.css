@@ -54,6 +54,17 @@ button {
     top: 20px;
     left: 20px;
     user-select: none;
+    max-width: 60vw;
+}
+
+#colors-container {
+    white-space: nowrap;
+    overflow-x: auto;
+    /*-ms-overflow-style: none;*/
+    /*scrollbar-width: none;*/
+}
+#colors-container::-webkit-scrollbar {
+    /*display: none;*/
 }
 
 .color-button {

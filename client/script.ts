@@ -188,7 +188,7 @@ function getState() {
                 lastState.shift();
             }
         })
-        .catch(err=>{
+        .catch(err => {
             console.warn(err);
             setTimeout(() => getState(), 5000);
         })
@@ -246,7 +246,9 @@ function updateTimeout() {
 
     controlsContainer.style.display = 'none';
     setTimeout(() => {
-        controlsContainer.style.display = 'block';
+        if(canvasState.sx>=0&&canvasState.sy>=0) {
+            controlsContainer.style.display = 'block';
+        }
     }, Math.ceil((canvasState.n - (Date.now() / 1000)) * 1000) + 100);
 
     ticker = setInterval(() => tickTimer(), 1000);
@@ -314,10 +316,33 @@ function canvasClicked(event: MouseEvent) {
     // canvasState.sy = Math.round((event.offsetY - (canvasState.h / 2.0))) * z;
     updateSelection();
 
+
+    const diff = canvasState.n - Math.floor(Date.now() / 1000);
+    if (diff <= 0) {
+        controlsContainer.style.display = 'block';
+    }
+
     // ctx.fillStyle = 'blue';
     // ctx.fillRect(canvasState.x, canvasState.y, 1, 1);
 
     updateSearchParams();
+}
+
+function outsideCanvasClicked(event: MouseEvent) {
+    event.stopPropagation();
+    event.preventDefault();
+
+    console.log(event);
+    if (event.composedPath().indexOf(canvasEl) !== -1 || event.composedPath().indexOf(controlsContainer) !== -1) {
+        return;
+    }
+
+    canvasState.sx = -1;
+    canvasState.sy = -1;
+
+    controlsContainer.style.display = 'none';
+
+    updateSelection();
 }
 
 function scrolled(event: WheelEvent) {
@@ -345,7 +370,12 @@ function afterZoomChange() {
 function updateSelection() {
     // selectionContainer.style.left = canvasState.x + 'px';
     // selectionContainer.style.top = canvasState.y + 'px';
-    selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
+    if (canvasState.sx >= 0 && canvasState.sy >= 0) {
+        selectionContainer.style.display = 'block';
+        selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
+    }else{
+        selectionContainer.style.display = 'none';
+    }
     // selectionContainer.style.transform = `translate3d(${canvasState.sx}px, ${canvasState.sy}px, 0) scale(100) `
     updatePositionInfo()
 }
@@ -370,6 +400,7 @@ function getDecimal(n: number): number {
 }
 
 canvasEl.addEventListener('click', canvasClicked);
+document.addEventListener('click', outsideCanvasClicked)
 document.addEventListener('wheel', scrolled);
 
 function mouseDown(e: MouseEvent | TouchEvent) {
