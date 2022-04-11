@@ -1,0 +1,71 @@
+import { Request, Response } from "express";
+import JWT, { Jwt, JwtPayload } from "jsonwebtoken";
+import { v4 as randomUuid } from "uuid";
+import { TIMEOUT } from "./data";
+import fs from "fs";
+
+const jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key');
+
+export async function verifyJWT(req: Request, res: Response): Promise<JwtPayload | undefined> {
+    const existingCookie = req.cookies?.['access_token'];
+    if (existingCookie) {
+        const verifyPromise = new Promise<Jwt>((resolve, reject) => {
+            JWT.verify(existingCookie, jwtPrivateKey, {
+                issuer: 'https://arr.place',
+                maxAge: '1y',
+                complete: true
+            }, (err, jwt) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+                if (!jwt) {
+                    reject(new Error('invalid JWT'));
+                    return;
+                }
+                resolve(jwt);
+            })
+        });
+        const jwt = await verifyPromise;
+        if (!jwt || !jwt.payload.sub || !jwt.payload['jti'] || !jwt.payload['lst'] || !('cnt' in (jwt.payload as JwtPayload))) {
+            res.status(400);
+            throw new Error('invalid JWT');
+        }
+
+        if (jwt.payload['ip'] !== req.ip) {
+            console.log(jwt.payload.sub + " changed ip " + jwt.payload['ip'] + " -> " + req.ip);
+        }
+
+        return jwt.payload as JwtPayload;
+    }
+    return undefined;
+}
+
+export async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Promise<string> {
+    if (!payload) {
+        const userId = randomUuid();
+        payload = {
+            sub: userId,
+            lst: Math.floor(Date.now() / 1000) - TIMEOUT,
+            cnt: 0,
+            ip: req.ip,
+            iss: 'https://arr.place',
+            jti: randomUuid()
+        }
+        console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
+    }
+
+    payload['ip'] = req.ip;
+
+    delete payload['exp']; // remove old expiration
+    const token = JWT.sign(payload, jwtPrivateKey, {
+        expiresIn: '1y'
+    })
+    res.cookie('access_token', token, {
+        domain: '.arr.place',
+        secure: true,
+        maxAge: 31556926000
+    })
+
+    return payload.sub!;
+}
