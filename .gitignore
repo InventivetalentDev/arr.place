@@ -4,7 +4,9 @@
 *data/*
 *node_modules
 
-*server.d.ts
+*dist*
+
+server/src/server.d.ts
 *server.js
 *server.js.map
 
