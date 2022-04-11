@@ -1,3 +1,6 @@
+import { isMouseEvent, isTouchEvent } from "./util";
+import { MAX_ZOOM, MIN_ZOOM, ZOOM_FACTOR } from "./data";
+
 const endpoint = 'https://y.arr.place';
 
 const mainContainer = document.getElementById('main-container') as HTMLDivElement;
@@ -14,11 +17,6 @@ const zoom = document.getElementById('zoom') as HTMLDivElement;
 const selectionContainer = document.getElementById('selection-container') as HTMLDivElement;
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvasEl.getContext('2d')!;
-
-const ZOOM_FACTOR = 0.001;
-const ZOOM_FACTOR_TOUCH = 0.01
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 100;
 
 let canvasState: CState = {
     w: 0,
@@ -402,9 +400,7 @@ function updatePositionInfo() {
     positionInfo.innerHTML = `${ Math.round(canvasState.cx) },${ Math.round(canvasState.cy) }@${ Math.round(canvasState.cz) }<br/>${ Math.round(canvasState.x) },${ Math.round(canvasState.y) }`
 }
 
-function getDecimal(n: number): number {
-    return n - Math.floor(n);
-}
+
 
 canvasEl.addEventListener('click', canvasClicked);
 document.addEventListener('click', outsideCanvasClicked)
@@ -546,31 +542,10 @@ function updateSearchParams() {
     history.pushState(null, '', location.pathname + '?' + params.toString());
 }
 
-// https://davidwalsh.name/function-debounce / http://underscorejs.org/#debounce
-function debounce(func: Function, wait: number, immediate?: boolean) {
-    let timeout: any;
-    return function () {
-        let context = this, args = arguments;
-        let later = function () {
-            timeout = null;
-            if (!immediate) func.apply(context, args);
-        };
-        let callNow = immediate && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) func.apply(context, args);
-    };
-};
 
 init();
 
-function isMouseEvent(obj: any): obj is MouseEvent {
-    return 'offsetX' in obj;
-}
 
-function isTouchEvent(obj: any): obj is TouchEvent {
-    return 'touches' in obj;
-}
 
 interface CState {
     w: number;

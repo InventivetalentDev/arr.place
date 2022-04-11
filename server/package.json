@@ -12,9 +12,10 @@
     "uuid": "^8.3.2"
   },
   "scripts": {
+    "clean": "rm -rf dist",
     "compile": "tsc",
     "watch": "tsc -w",
-    "build": "npm run compile"
+    "build": "npm run clean && npm run compile"
   },
   "devDependencies": {
     "@types/compression": "^1.7.2",
