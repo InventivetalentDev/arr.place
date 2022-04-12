@@ -19,7 +19,8 @@ import { User } from "./db/User";
 import { AsyncLoadingCache, Caches, SimpleCache } from "@inventivetalent/loading-cache";
 import { Time } from "@inventivetalent/time";
 import { IChangeDocument } from "./typings/db/IChangeDocument";
-
+import { makeName } from "./names";
+import { IUserDocument } from "./typings/db/IUserDocument";
 
 const app = express()
 const port = 3024
@@ -215,6 +216,7 @@ async function startup() {
         console.log('register', req.ip)
 
         const userId = randomUuid();
+        const userName = makeName();
         jwtPayload = {
             sub: userId,
             lst: Math.floor(Date.now() / 1000) - TIMEOUT,
@@ -223,11 +225,12 @@ async function startup() {
             iss: 'https://arr.place',
             jti: randomUuid()
         };
-        console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
+        console.log('assigned user id', userId, userName, req.ip, req.headers['user-agent']);
         await applyJWT(req, res, jwtPayload);
 
         const user = new User({
             uuid: stripUuid(userId),
+            name: userName,
             created: new Date(),
             used: new Date()
         });
@@ -381,6 +384,12 @@ async function startup() {
 
         await User.updateUsed(stripUuid(jwtPayload.sub));
         ACTIVE_CACHE.put(stripUuid(jwtPayload.sub), Math.floor(Date.now() / 1000));
+
+        User.findOne({ uuid: stripUuid(jwtPayload.sub)}).exec().then(user=>{
+            if(!user||user.name) return;
+            user.name = makeName();
+            return user.save();
+        })
 
         res.json({
             next: Math.floor(Date.now() / 1000) + TIMEOUT
