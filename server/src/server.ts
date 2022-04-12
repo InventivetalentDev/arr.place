@@ -165,7 +165,7 @@ async function startup() {
     console.log("Registering routes");
 
     app.get('/', async (req: Request, res: Response) => {
-        res.send('Hello World!')
+        res.redirect('https://arr.place');
     })
 
     app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
