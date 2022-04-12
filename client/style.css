@@ -94,6 +94,12 @@ button {
     box-shadow: #eeeeee 0 0 6px 6px
 }
 
+#color-place-button, #color-cancel-button {
+    width: 30px;
+    height: 30px;
+    padding: 8px 8px;
+}
+
 #timer-container {
     top: 20px;
     right: 20px;
@@ -111,6 +117,15 @@ button {
     padding: 10px 20px;
     border-radius: 50px;
     font-size: 18px;
+}
+
+#info-container {
+    bottom: 20px;
+    right: 20px;
+    color: white;
+    padding: 10px 10px;
+    border-radius: 20px;
+    font-size: 16px;
 }
 
 #camera {

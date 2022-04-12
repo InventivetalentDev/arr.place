@@ -10,6 +10,8 @@ const colorPlaceButton = document.getElementById('color-place-button') as HTMLEl
 const colorCancelButton = document.getElementById('color-cancel-button') as HTMLElement;
 const timerContainer = document.getElementById('timer-container') as HTMLElement;
 const positionInfo = document.getElementById('position-info') as HTMLElement;
+const viewersInfo = document.getElementById('viewers') as HTMLSpanElement;
+const activeInfo = document.getElementById('active') as HTMLSpanElement;
 const timer = document.getElementById('timer') as HTMLElement;
 const camera = document.getElementById('camera') as HTMLDivElement;
 const position = document.getElementById('position') as HTMLDivElement;
@@ -186,6 +188,9 @@ function getInfo() {
         .then(res => res.json())
         .then(i => {
             info = i;
+
+            viewersInfo.textContent = `${ info.viewing }`;
+            activeInfo.textContent = `${ info.active }`;
 
             setTimeout(() => getInfo(), 30000);
         })
