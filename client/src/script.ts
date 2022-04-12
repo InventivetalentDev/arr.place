@@ -381,7 +381,7 @@ function afterZoomChange() {
 function updateSelection() {
     if (canvasState.sx >= 0 && canvasState.sy >= 0) {
         selectionContainer.style.display = 'block';
-        selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(100)`;
+        selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(1)`;
     } else {
         selectionContainer.style.display = 'none';
     }
