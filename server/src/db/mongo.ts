@@ -9,7 +9,6 @@ export async function connectMongo(): Promise<Mongoose> {
     };
 
     let m: Mongoose;
-    console.log("Connecting to mongodb...");
     m = await mongoose.connect(config.mongo.url, options);
     console.info("MongoDB connected!");
 
