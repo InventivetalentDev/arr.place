@@ -310,7 +310,7 @@ async function startup() {
         const change = new Change({
             x: x,
             y: y,
-            color: clr.substring(1),
+            color: clr.substring(1).toLowerCase(),
             user: stripUuid(jwtPayload.sub),
             time: new Date()
         });
