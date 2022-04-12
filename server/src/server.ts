@@ -14,8 +14,11 @@ import { applyJWT, verifyJWT } from "./jwt";
 import { connectMongo } from "./db/mongo";
 import { start } from "repl";
 import { Change } from "./db/Change";
-import { stripUuid } from "./util";
+import { Maybe, stripUuid } from "./util";
 import { User } from "./db/User";
+import { AsyncLoadingCache, Caches } from "@inventivetalent/loading-cache";
+import { Time } from "@inventivetalent/time";
+import { IChangeDocument } from "./typings/db/IChangeDocument";
 
 
 const app = express()
@@ -42,6 +45,16 @@ let state: string[] = [];
 
 const CHUNKS: Buffer[][] = [[]]
 const LAST_UPDATES: number[][] = [];
+
+const CHANGE_CACHE: AsyncLoadingCache<number[], Maybe<IChangeDocument>> = Caches.builder()
+    .expireAfterWrite(Time.minutes(5))
+    .expireAfterAccess(Time.minutes(1))
+    .buildAsync<number[], Maybe<IChangeDocument>>((key: number[]) => {
+        return Change.findOne({
+            x: key[0],
+            y: key[1]
+        }).exec();
+    })
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -197,18 +210,24 @@ async function startup() {
         res.json(list);
     })
 
-// app.get('/info/:x/:y', async (req: Request, res: Response) => {
-//     const x = parseInt(req.params['x']);
-//     const y = parseInt(req.params['y']);
-//     if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
-//         res.status(400).end();
-//         return;
-//     }
-//
-//     res.json({
-//         mod: LAST_UPDATES[x][y]
-//     })
-// })
+    app.get('/info/:x/:y', async (req: Request, res: Response) => {
+        const x = parseInt(req.params['x']);
+        const y = parseInt(req.params['y']);
+        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
+            res.status(400).end();
+            return;
+        }
+
+        const change = await CHANGE_CACHE.get([x, y]);
+        if (!change) {
+            res.status(404).end();
+            return;
+        }
+        res.json({
+            mod: Math.floor(change.time.getTime() / 1000),
+            usr: change.user.substring(8, 8 + 16)
+        });
+    })
 
     app.put('/place', placeLimiter, async (req: Request, res: Response) => {
         if (!req.body || req.body.length !== 3) {

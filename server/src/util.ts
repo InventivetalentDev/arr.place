@@ -16,4 +16,4 @@ export function hexToRgb(hex): number[] {
     ];
 }
 
-export type Maybe<T> = T | undefined;
+export type Maybe<T> = T | undefined | null;
