@@ -9,14 +9,14 @@ import { v4 as randomUuid } from "uuid";
 import JWT, { Jwt, JwtPayload } from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import { CHUNK_SIZE, COLORS, COLORS_PNG, EPOCH_BASE, HEIGHT, MOD_SIZE, TIMEOUT, WIDTH } from "./data";
-import { placeLimiter, stateLimiter } from "./ratelimit";
+import { placeLimiter, registerLimiter, stateLimiter } from "./ratelimit";
 import { applyJWT, verifyJWT } from "./jwt";
 import { connectMongo } from "./db/mongo";
 import { start } from "repl";
 import { Change } from "./db/Change";
 import { Maybe, stripUuid } from "./util";
 import { User } from "./db/User";
-import { AsyncLoadingCache, Caches } from "@inventivetalent/loading-cache";
+import { AsyncLoadingCache, Caches, SimpleCache } from "@inventivetalent/loading-cache";
 import { Time } from "@inventivetalent/time";
 import { IChangeDocument } from "./typings/db/IChangeDocument";
 
@@ -54,7 +54,13 @@ const CHANGE_CACHE: AsyncLoadingCache<number[], Maybe<IChangeDocument>> = Caches
             x: key[0],
             y: key[1]
         }).exec();
-    })
+    });
+const VIEWING_CACHE: SimpleCache<string, number> = Caches.builder()
+    .expireAfterWrite(Time.minutes(10))
+    .build();
+const ACTIVE_CACHE: SimpleCache<string, number> = Caches.builder()
+    .expireAfterWrite(Time.minutes(10))
+    .build();
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -175,7 +181,9 @@ async function startup() {
 
         console.log('hello', userId, req.ip)
 
-        await User.updateUsed(stripUuid(userId));
+        if (userId) {
+            await User.updateUsed(stripUuid(userId));
+        }
 
         res.json({
             w: WIDTH,
@@ -186,6 +194,47 @@ async function startup() {
             v: VERSION
         })
     });
+
+    app.post('/register', registerLimiter, async (req: Request, res: Response) => {
+        let jwtPayload;
+        try {
+            jwtPayload = await verifyJWT(req, res);
+        } catch (e) {
+            console.warn(e);
+            res.status(403).end();
+            return;
+        }
+        if (jwtPayload && jwtPayload.sub) {
+            // already registered
+            res.status(400).end();
+            return;
+        }
+
+        console.log('register', req.ip)
+
+        const userId = randomUuid();
+        jwtPayload = {
+            sub: userId,
+            lst: Math.floor(Date.now() / 1000) - TIMEOUT,
+            cnt: 0,
+            ip: req.ip,
+            iss: 'https://arr.place',
+            jti: randomUuid()
+        };
+        console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
+        await applyJWT(req, res, jwtPayload);
+
+        const user = new User({
+            uuid: stripUuid(userId),
+            created: new Date(),
+            used: new Date()
+        });
+        await user.save();
+
+        res.json({
+            u: userId,
+        });
+    })
 
     app.use('/pngs', express.static('pngs'));
 
@@ -205,9 +254,20 @@ async function startup() {
         }
         await applyJWT(req, res, jwtPayload);
 
+        VIEWING_CACHE.put(stripUuid(jwtPayload.sub), Math.floor(Date.now() / 1000));
+
         let list: string[] = state;
         res.header('Cache-Control', 'max-age=1')
         res.json(list);
+    })
+
+    app.get('/info', async (req: Request, res: Response) => {
+        const viewing = VIEWING_CACHE.keys().length;
+        const active = ACTIVE_CACHE.keys().length;
+        res.json({
+            viewing,
+            active
+        })
     })
 
     app.get('/info/:x/:y', async (req: Request, res: Response) => {
@@ -315,8 +375,10 @@ async function startup() {
             time: new Date()
         });
         await change.save();
+        CHANGE_CACHE.put([x, y], change);
 
         await User.updateUsed(stripUuid(jwtPayload.sub));
+        ACTIVE_CACHE.put(stripUuid(jwtPayload.sub), Math.floor(Date.now() / 1000));
 
         res.json({
             next: Math.floor(Date.now() / 1000) + TIMEOUT

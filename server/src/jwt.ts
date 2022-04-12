@@ -4,7 +4,7 @@ import { v4 as randomUuid } from "uuid";
 import { TIMEOUT } from "./data";
 import fs from "fs";
 import { User } from "./db/User";
-import { stripUuid } from "./util";
+import { Maybe, stripUuid } from "./util";
 
 let jwtPrivateKey;
 try {
@@ -48,26 +48,27 @@ export async function verifyJWT(req: Request, res: Response): Promise<JwtPayload
     return undefined;
 }
 
-export async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Promise<string> {
-    if (!payload) {
-        const userId = randomUuid();
-        payload = {
-            sub: userId,
-            lst: Math.floor(Date.now() / 1000) - TIMEOUT,
-            cnt: 0,
-            ip: req.ip,
-            iss: 'https://arr.place',
-            jti: randomUuid()
-        }
-        console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
-
-        const user = new User({
-            uuid: stripUuid(userId),
-            created: new Date(),
-            used: new Date()
-        });
-        await user.save();
-    }
+export async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Promise<Maybe<string>> {
+    if(!payload) return undefined;
+    // if (!payload) { //TODO: remove
+    //     const userId = randomUuid();
+    //     payload = {
+    //         sub: userId,
+    //         lst: Math.floor(Date.now() / 1000) - TIMEOUT,
+    //         cnt: 0,
+    //         ip: req.ip,
+    //         iss: 'https://arr.place',
+    //         jti: randomUuid()
+    //     }
+    //     console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
+    //
+    //     const user = new User({
+    //         uuid: stripUuid(userId),
+    //         created: new Date(),
+    //         used: new Date()
+    //     });
+    //     await user.save();
+    // }
 
     payload['ip'] = req.ip;
 

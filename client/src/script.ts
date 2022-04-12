@@ -57,6 +57,20 @@ async function init() {
     canvasEl.width = canvasState.w!;
     canvasEl.height = canvasState.h!;
 
+    if (!initInfo.u) {
+        try {
+            initInfo = await fetch(endpoint + '/register', {
+                method: 'POST',
+                credentials: 'include',
+            }).then(res => res.json());
+        } catch (e) {
+            console.warn(e);
+            setTimeout(() => init(), 5000);
+            return;
+        }
+        canvasState = { ...canvasState, ...initInfo };
+    }
+
     const cameraBounds = camera.getBoundingClientRect();
     const canvasBounds = canvasEl.getBoundingClientRect();
     canvasState.cx = cameraBounds.width / 2 - canvasEl.width / 4;
