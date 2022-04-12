@@ -58,12 +58,21 @@ const CHANGE_CACHE: AsyncLoadingCache<number[], Maybe<IChangeDocument>> = Caches
             time: -1
         }).exec();
     });
+const USER_CACHE: AsyncLoadingCache<string, Maybe<IUserDocument>> = Caches.builder()
+    .expireAfterWrite(Time.minutes(5))
+    .expireAfterAccess(Time.minutes(1))
+    .buildAsync<string, Maybe<IUserDocument>>((key: string) => {
+        return User.findOne({
+            uuid: stripUuid(key)
+        }).exec();
+    })
 const VIEWING_CACHE: SimpleCache<string, number> = Caches.builder()
     .expireAfterWrite(Time.minutes(10))
     .build();
 const ACTIVE_CACHE: SimpleCache<string, number> = Caches.builder()
     .expireAfterWrite(Time.minutes(10))
     .build();
+
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -289,9 +298,7 @@ async function startup() {
             res.status(404).end();
             return;
         }
-        const user = await User.findOne({
-            uuid: stripUuid(change.user)
-        }).exec();
+        const user = await USER_CACHE.get(change.user);
 
         res.header('Cache-Control', 'public, max-age=60')
         res.json({

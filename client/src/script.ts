@@ -182,9 +182,7 @@ function getState() {
 }
 
 function getInfo() {
-    fetch(endpoint + '/info', {
-        credentials: 'include'
-    })
+    fetch(endpoint + '/info')
         .then(res => res.json())
         .then(i => {
             info = i;
@@ -200,9 +198,7 @@ function getInfo() {
 }
 
 function getPixelInfo(x: number, y: number) {
-    fetch(endpoint + '/info/' + x + '/' + y, {
-        credentials: 'include'
-    })
+    fetch(endpoint + '/info/' + x + '/' + y)
         .then(res => res.json())
         .catch(e => undefined)
         .then(i => {
