@@ -53,6 +53,8 @@ const CHANGE_CACHE: AsyncLoadingCache<number[], Maybe<IChangeDocument>> = Caches
         return Change.findOne({
             x: key[0],
             y: key[1]
+        }).sort({
+            time: -1
         }).exec();
     });
 const VIEWING_CACHE: SimpleCache<string, number> = Caches.builder()
