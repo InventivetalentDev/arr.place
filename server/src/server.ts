@@ -278,7 +278,7 @@ async function startup() {
     app.get('/info/:x/:y', async (req: Request, res: Response) => {
         const x = parseInt(req.params['x']);
         const y = parseInt(req.params['y']);
-        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT) {
+        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || isNaN(x) || isNaN(y)) {
             res.status(400).end();
             return;
         }
@@ -326,7 +326,7 @@ async function startup() {
         }
 
         const [x, y, v] = req.body;
-        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || v < 0 || v > COLORS.length) {
+        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || v < 0 || v > COLORS.length || isNaN(x) || isNaN(y) || isNaN(v)) {
             res.status(400).end();
             return;
         }
@@ -385,8 +385,8 @@ async function startup() {
         await User.updateUsed(stripUuid(jwtPayload.sub));
         ACTIVE_CACHE.put(stripUuid(jwtPayload.sub), Math.floor(Date.now() / 1000));
 
-        User.findOne({ uuid: stripUuid(jwtPayload.sub)}).exec().then(user=>{
-            if(!user||user.name) return;
+        User.findOne({ uuid: stripUuid(jwtPayload.sub) }).exec().then(user => {
+            if (!user || user.name) return;
             user.name = makeName();
             return user.save();
         })
