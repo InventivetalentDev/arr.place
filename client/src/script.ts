@@ -33,6 +33,11 @@ let canvasState: CState = {
     n: 0
 };
 
+let info: Info = {
+    active: 0,
+    viewing: 0
+}
+
 let selectedColor = -1;
 let ticker: any = -1;
 
@@ -124,6 +129,7 @@ async function init() {
     updateTimeout();
 
     getState();
+    getInfo();
 
     localStorage.setItem('canvas_state', JSON.stringify(canvasState));
 }
@@ -171,6 +177,29 @@ function getState() {
             console.warn(err);
             setTimeout(() => getState(), 5000);
         })
+}
+
+function getInfo() {
+    fetch(endpoint + '/info')
+        .then(res => res.json())
+        .then(i => {
+            info = i;
+
+            setTimeout(() => getInfo(), 30000);
+        })
+        .catch(e => {
+            setTimeout(() => getInfo(), 60000);
+        })
+}
+
+function getPixelInfo(x: number, y: number) {
+    fetch(endpoint + '/info/' + x + '/' + y)
+        .then(res => res.json())
+        .catch(e => undefined)
+        .then(i => {
+            if (!i) return;
+
+        });
 }
 
 function clearSelectedColor() {
@@ -291,6 +320,8 @@ function canvasClicked(event: MouseEvent) {
 
     updateSelection();
 
+    getPixelInfo(canvasState.x, canvasState.y)
+
 
     const diff = canvasState.n - Math.floor(Date.now() / 1000);
     if (diff <= 0) {
@@ -345,7 +376,7 @@ function updateSelection() {
     } else {
         selectionContainer.style.display = 'none';
     }
-    updatePositionInfo()
+    updatePositionInfo();
 }
 
 function updateZoom() {
@@ -503,4 +534,14 @@ interface CState {
     y: number;
     n: number;
     u?: string;
+}
+
+interface Info {
+    viewing: number;
+    active: number;
+}
+
+interface ChangeInfo {
+    mod: number;
+    usr: string;
 }
