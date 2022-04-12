@@ -5,6 +5,7 @@
     "strictPropertyInitialization": true,
     "module": "CommonJS",
     "target": "ES2018",
+    "moduleResolution": "Node",
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -21,7 +22,8 @@
     "types": [
       "node",
       "express",
-      "body-parser"
+      "body-parser",
+      "mongoose"
     ],
     "baseUrl": "."
   },

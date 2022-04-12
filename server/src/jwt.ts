@@ -6,7 +6,12 @@ import fs from "fs";
 import { User } from "./db/User";
 import { stripUuid } from "./util";
 
-const jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key');
+let jwtPrivateKey;
+try {
+    jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key')
+} catch (e) {
+    console.warn("couldn't read jwt key!", e);
+}
 
 export async function verifyJWT(req: Request, res: Response): Promise<JwtPayload | undefined> {
     const existingCookie = req.cookies?.['access_token'];
