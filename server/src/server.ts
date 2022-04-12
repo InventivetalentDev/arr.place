@@ -288,9 +288,13 @@ async function startup() {
             res.status(404).end();
             return;
         }
+        const user = await User.findOne({
+            uuid: stripUuid(change.user)
+        }).exec();
         res.json({
             mod: Math.floor(change.time.getTime() / 1000),
-            usr: change.user.substring(8, 8 + 16)
+            usr: change.user.substring(8, 8 + 16),
+            nme: user?.name
         });
     })
 
