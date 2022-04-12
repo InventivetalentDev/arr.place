@@ -269,6 +269,7 @@ async function startup() {
     app.get('/info', async (req: Request, res: Response) => {
         const viewing = VIEWING_CACHE.keys().length;
         const active = ACTIVE_CACHE.keys().length;
+        res.header('Cache-Control', 'public, max-age=120')
         res.json({
             viewing,
             active
@@ -291,6 +292,8 @@ async function startup() {
         const user = await User.findOne({
             uuid: stripUuid(change.user)
         }).exec();
+
+        res.header('Cache-Control', 'public, max-age=60')
         res.json({
             mod: Math.floor(change.time.getTime() / 1000),
             usr: change.user.substring(8, 8 + 16),
