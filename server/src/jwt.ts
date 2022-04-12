@@ -3,6 +3,8 @@ import JWT, { Jwt, JwtPayload } from "jsonwebtoken";
 import { v4 as randomUuid } from "uuid";
 import { TIMEOUT } from "./data";
 import fs from "fs";
+import { User } from "./db/User";
+import { stripUuid } from "./util";
 
 const jwtPrivateKey = fs.readFileSync('canvas.jwt.priv.key');
 
@@ -53,6 +55,13 @@ export async function applyJWT(req: Request, res: Response, payload?: JwtPayload
             jti: randomUuid()
         }
         console.log('assigned user id', userId, req.ip, req.headers['user-agent']);
+
+        const user = new User({
+            uuid: stripUuid(userId),
+            created: new Date(),
+            used: new Date()
+        });
+        await user.save();
     }
 
     payload['ip'] = req.ip;

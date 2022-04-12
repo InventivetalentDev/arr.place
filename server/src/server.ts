@@ -11,7 +11,11 @@ import cookieParser from "cookie-parser";
 import { CHUNK_SIZE, COLORS, COLORS_PNG, EPOCH_BASE, HEIGHT, MOD_SIZE, TIMEOUT, WIDTH } from "./data";
 import { placeLimiter, stateLimiter } from "./ratelimit";
 import { applyJWT, verifyJWT } from "./jwt";
-
+import { connectMongo } from "./db/mongo";
+import { start } from "repl";
+import { Change } from "./db/Change";
+import { stripUuid } from "./util";
+import { User } from "./db/User";
 
 
 const app = express()
@@ -34,64 +38,10 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
     }
 };
 
-app.set('trust proxy', 1)
-app.use(compression());
-app.use(corsMiddleware)
-app.use(cookieParser())
-app.use(bodyParser.json());
-
-try {
-    fs.mkdirSync("data");
-} catch (e) {
-}
-
-try {
-    fs.mkdirSync("pngs");
-} catch (e) {
-}
-
-
 let state: string[] = [];
 
 const CHUNKS: Buffer[][] = [[]]
 const LAST_UPDATES: number[][] = [];
-for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
-    CHUNKS[x] = [];
-    LAST_UPDATES[x] = [];
-    for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
-        CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE);
-        LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
-
-        const bufs: Buffer[] = [];
-        const f = `data/c_${ x }_${ y }.bin`;
-        if (!fs.existsSync(f)) continue;
-        fs.copyFileSync(f, f + '.' + (Math.floor(Date.now() / 1000)) + '.bck'); // backup
-        const stream = fs.createReadStream(f);
-        stream.on("data", (d) => {
-            bufs.push(d as Buffer)
-        });
-        stream.on("end", () => {
-            inflate(Buffer.concat(bufs), (err, buffer) => {
-                if (err) {
-                    console.error(err);
-                }
-                CHUNKS[x][y] = buffer;
-                if (buffer.length > CHUNK_SIZE * CHUNK_SIZE) {
-                    try {
-                        const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
-                        LAST_UPDATES[x][y] = EPOCH_BASE + t;
-                    } catch (e) {
-                        console.warn(e);
-                    }
-                }
-            });
-        });
-    }
-}
-setTimeout(() => {
-    updateState();
-}, 1000);
-
 
 function savePNG(cX: number, cY: number) {
     const chunk = CHUNKS[cX][cY];
@@ -130,55 +80,122 @@ function updateState() {
     }
 }
 
-app.get('/', async (req: Request, res: Response) => {
-    res.send('Hello World!')
-})
 
-app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
-    let jwtPayload;
+async function startup() {
+    app.set('trust proxy', 1)
+    app.use(compression());
+    app.use(corsMiddleware)
+    app.use(cookieParser())
+    app.use(bodyParser.json());
+
     try {
-        jwtPayload = await verifyJWT(req, res);
+        fs.mkdirSync("data");
     } catch (e) {
-        console.warn(e);
-        res.status(403).end();
-        return;
     }
-    const userId = await applyJWT(req, res, jwtPayload);
 
-    console.log('hello', userId, req.ip)
+    try {
+        fs.mkdirSync("pngs");
+    } catch (e) {
+    }
 
-    res.json({
-        w: WIDTH,
-        h: HEIGHT,
-        c: COLORS,
-        s: CHUNK_SIZE,
-        u: userId,
-        v: VERSION
+
+    console.log("Loading chunk data...");
+    for (let x = 0; x < WIDTH / CHUNK_SIZE; x++) {
+        CHUNKS[x] = [];
+        LAST_UPDATES[x] = [];
+        for (let y = 0; y < HEIGHT / CHUNK_SIZE; y++) {
+            CHUNKS[x][y] = Buffer.alloc(CHUNK_SIZE * CHUNK_SIZE + MOD_SIZE);
+            LAST_UPDATES[x][y] = Math.floor(Date.now() / 1000);
+
+            const bufs: Buffer[] = [];
+            const f = `data/c_${ x }_${ y }.bin`;
+            if (!fs.existsSync(f)) continue;
+            fs.copyFileSync(f, f + '.' + (Math.floor(Date.now() / 1000)) + '.bck'); // backup
+            const stream = fs.createReadStream(f);
+            stream.on("data", (d) => {
+                bufs.push(d as Buffer)
+            });
+            stream.on("end", () => {
+                inflate(Buffer.concat(bufs), (err, buffer) => {
+                    if (err) {
+                        console.error(err);
+                    }
+                    CHUNKS[x][y] = buffer;
+                    if (buffer.length > CHUNK_SIZE * CHUNK_SIZE) {
+                        try {
+                            const t = buffer.readUint32LE(CHUNK_SIZE * CHUNK_SIZE); // modified time
+                            LAST_UPDATES[x][y] = EPOCH_BASE + t;
+                        } catch (e) {
+                            console.warn(e);
+                        }
+                    }
+                });
+            });
+        }
+    }
+    setTimeout(() => {
+        updateState();
+    }, 1000);
+
+    {
+        console.log("Connecting to mongo...");
+        await connectMongo();
+    }
+
+
+    console.log("Registering routes");
+
+    app.get('/', async (req: Request, res: Response) => {
+        res.send('Hello World!')
     })
-});
 
-app.use('/pngs', express.static('pngs'));
+    app.get('/hello', stateLimiter, async (req: Request, res: Response) => {
+        let jwtPayload;
+        try {
+            jwtPayload = await verifyJWT(req, res);
+        } catch (e) {
+            console.warn(e);
+            res.status(403).end();
+            return;
+        }
+        const userId = await applyJWT(req, res, jwtPayload);
+
+        console.log('hello', userId, req.ip)
+
+        await User.updateUsed(stripUuid(userId));
+
+        res.json({
+            w: WIDTH,
+            h: HEIGHT,
+            c: COLORS,
+            s: CHUNK_SIZE,
+            u: userId,
+            v: VERSION
+        })
+    });
+
+    app.use('/pngs', express.static('pngs'));
 
 
-app.get('/state', stateLimiter, async (req: Request, res: Response) => {
-    let jwtPayload;
-    try {
-        jwtPayload = await verifyJWT(req, res);
-    } catch (e) {
-        console.warn(e);
-        res.status(403).end();
-        return;
-    }
-    if (!jwtPayload) {
-        res.status(403).end();
-        return;
-    }
-    await applyJWT(req, res, jwtPayload);
+    app.get('/state', stateLimiter, async (req: Request, res: Response) => {
+        let jwtPayload;
+        try {
+            jwtPayload = await verifyJWT(req, res);
+        } catch (e) {
+            console.warn(e);
+            res.status(403).end();
+            return;
+        }
+        if (!jwtPayload) {
+            res.status(403).end();
+            return;
+        }
+        await applyJWT(req, res, jwtPayload);
 
-    let list: string[] = state;
-    res.header('Cache-Control', 'max-age=1')
-    res.json(list);
-})
+        let list: string[] = state;
+        res.header('Cache-Control', 'max-age=1')
+        res.json(list);
+    })
 
 // app.get('/info/:x/:y', async (req: Request, res: Response) => {
 //     const x = parseInt(req.params['x']);
@@ -193,96 +210,111 @@ app.get('/state', stateLimiter, async (req: Request, res: Response) => {
 //     })
 // })
 
-app.put('/place', placeLimiter, async (req: Request, res: Response) => {
-    if (!req.body || req.body.length !== 3) {
-        res.status(400).end();
-        return;
-    }
-
-    let jwtPayload;
-    try {
-        jwtPayload = await verifyJWT(req, res);
-    } catch (e) {
-        console.warn(e);
-        res.status(403).end();
-        return;
-    }
-    if (!jwtPayload) {
-        res.status(403).end();
-        return;
-    }
-    if (!req.headers['x-user']) {
-        res.status(400).end();
-        return;
-    }
-
-    console.log('place', jwtPayload.sub, req.ip)
-
-    if (req.headers['x-user'] !== jwtPayload.sub) {
-        res.status(403).end();
-        console.warn("user id mismatch! header:" + req.headers['x-user'] + ", token: " + jwtPayload.sub);
-        return;
-    }
-
-    const [x, y, v] = req.body;
-    if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || v < 0 || v > COLORS.length) {
-        res.status(400).end();
-        return;
-    }
-
-    if (Math.floor(Date.now() / 1000) - jwtPayload['lst'] < TIMEOUT) {
-        console.warn("place too soon", req.ip);
-        return res.status(429).end();
-    }
-
-    const cX = Math.floor(x / CHUNK_SIZE);
-    const cY = Math.floor(y / CHUNK_SIZE);
-    const chunk = CHUNKS[cX][cY];
-
-    const clr = COLORS[v];
-
-    const iX = x - (cX * CHUNK_SIZE);
-    const iY = y - (cY * CHUNK_SIZE);
-    const idx = (CHUNK_SIZE * iY + iX) << 2;
-    // chunk.data[idx] = clr[0];
-    // chunk.data[idx+1] = clr[1];
-    // chunk.data[idx+2] = clr[2];
-    chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
-    chunk.writeUint32LE(Math.floor(Date.now() / 1000) - EPOCH_BASE, CHUNK_SIZE * CHUNK_SIZE); // modified time
-
-    console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
-    deflate(chunk, (err, buffer) => {
-        if (err) {
-            console.error(err);
+    app.put('/place', placeLimiter, async (req: Request, res: Response) => {
+        if (!req.body || req.body.length !== 3) {
+            res.status(400).end();
+            return;
         }
-        console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length } bytes`);
-        const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`);
-        stream.write(buffer);
-        stream.on("end", () => {
-            stream.end();
+
+        let jwtPayload;
+        try {
+            jwtPayload = await verifyJWT(req, res);
+        } catch (e) {
+            console.warn(e);
+            res.status(403).end();
+            return;
+        }
+        if (!jwtPayload) {
+            res.status(403).end();
+            return;
+        }
+        if (!req.headers['x-user']) {
+            res.status(400).end();
+            return;
+        }
+
+        console.log('place', jwtPayload.sub, req.ip)
+
+        if (req.headers['x-user'] !== jwtPayload.sub) {
+            res.status(403).end();
+            console.warn("user id mismatch! header:" + req.headers['x-user'] + ", token: " + jwtPayload.sub);
+            return;
+        }
+
+        const [x, y, v] = req.body;
+        if (x < 0 || y < 0 || x > WIDTH || y > HEIGHT || v < 0 || v > COLORS.length) {
+            res.status(400).end();
+            return;
+        }
+
+        if (Math.floor(Date.now() / 1000) - jwtPayload['lst'] < TIMEOUT) {
+            console.warn("place too soon", req.ip);
+            return res.status(429).end();
+        }
+
+        const cX = Math.floor(x / CHUNK_SIZE);
+        const cY = Math.floor(y / CHUNK_SIZE);
+        const chunk = CHUNKS[cX][cY];
+
+        const clr = COLORS[v];
+
+        const iX = x - (cX * CHUNK_SIZE);
+        const iY = y - (cY * CHUNK_SIZE);
+        const idx = (CHUNK_SIZE * iY + iX) << 2;
+        // chunk.data[idx] = clr[0];
+        // chunk.data[idx+1] = clr[1];
+        // chunk.data[idx+2] = clr[2];
+        chunk.writeUInt8(v, (iY * CHUNK_SIZE) + iX);
+        chunk.writeUint32LE(Math.floor(Date.now() / 1000) - EPOCH_BASE, CHUNK_SIZE * CHUNK_SIZE); // modified time
+
+        console.log(`chunk size ${ cX },${ cY }: ${ chunk.length } bytes`);
+        deflate(chunk, (err, buffer) => {
+            if (err) {
+                console.error(err);
+            }
+            console.log(`compressed chunk size ${ cX },${ cY }: ${ buffer.length } bytes`);
+            const stream = fs.createWriteStream(`data/c_${ cX }_${ cY }.bin`);
+            stream.write(buffer);
+            stream.on("end", () => {
+                stream.end();
+            });
+        })
+        // chunk.pack().pipe(fs.createWriteStream(`data/c_${ cX }_${ cY }.png`))
+
+        savePNG(cX, cY);
+        updateState();
+
+        jwtPayload['lst'] = Math.floor(Date.now() / 1000);
+        jwtPayload['cnt']++;
+        await applyJWT(req, res, jwtPayload);
+
+        const change = new Change({
+            x: x,
+            y: y,
+            color: clr.substring(1),
+            user: stripUuid(jwtPayload.sub),
+            time: new Date()
         });
-    })
-    // chunk.pack().pipe(fs.createWriteStream(`data/c_${ cX }_${ cY }.png`))
+        await change.save();
 
-    savePNG(cX, cY);
-    updateState();
+        await User.updateUsed(stripUuid(jwtPayload.sub));
 
-    jwtPayload['lst'] = Math.floor(Date.now() / 1000);
-    jwtPayload['cnt']++;
-    await applyJWT(req, res, jwtPayload);
-
-    res.json({
-        next: Math.floor(Date.now() / 1000) + TIMEOUT
-    })
-});
+        res.json({
+            next: Math.floor(Date.now() / 1000) + TIMEOUT
+        })
+    });
 
 
+    console.log("Starting!")
 
-setTimeout(() => {
-    app.listen(port, () => {
-        console.log(`Example app listening on port ${ port }`)
-    })
-}, 1000);
+    setTimeout(() => {
+        app.listen(port, () => {
+            console.log(`Example app listening on port ${ port }`)
+        })
+    }, 500);
+}
+
+startup();
 
 
 

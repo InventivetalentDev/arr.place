@@ -5,6 +5,7 @@
     "strictPropertyInitialization": true,
     "module": "CommonJS",
     "target": "ES2018",
+    "resolveJsonModule": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "sourceRoot": "src",

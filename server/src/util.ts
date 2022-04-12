@@ -15,3 +15,5 @@ export function hexToRgb(hex): number[] {
         parseInt(result[3], 16)
     ];
 }
+
+export type Maybe<T> = T | undefined;
