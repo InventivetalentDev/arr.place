@@ -12,6 +12,9 @@ const timerContainer = document.getElementById('timer-container') as HTMLElement
 const positionInfo = document.getElementById('position-info') as HTMLElement;
 const viewersInfo = document.getElementById('viewers') as HTMLSpanElement;
 const activeInfo = document.getElementById('active') as HTMLSpanElement;
+const modifiedInfo = document.getElementById('selection-bubble') as HTMLDivElement;
+const modifiedTime = document.getElementById('modified-time') as HTMLSpanElement;
+const modifiedUser = document.getElementById('modified-user') as HTMLSpanElement;
 const timer = document.getElementById('timer') as HTMLElement;
 const camera = document.getElementById('camera') as HTMLDivElement;
 const position = document.getElementById('position') as HTMLDivElement;
@@ -198,12 +201,16 @@ function getInfo() {
 }
 
 function getPixelInfo(x: number, y: number) {
+    modifiedInfo.style.display = 'none';
     fetch(endpoint + '/info/' + x + '/' + y)
         .then(res => res.json())
-        .catch(e => undefined)
         .then(i => {
-            if (!i) return;
+            if (!i || !i.mod) return;
 
+            modifiedTime.textContent = `${ timeSince(i.mod*1000) } ago`;
+            modifiedUser.textContent = `${ i.nme || i.usr || '???' }`;
+
+            modifiedInfo.style.display = 'block';
         });
 }
 
@@ -213,6 +220,34 @@ function clearSelectedColor() {
     colorPlaceButton.setAttribute('disabled', '')
     colorCancelButton.setAttribute('disabled', '')
     selectionContainer.style.backgroundColor = 'transparent';
+}
+
+function timeSince(date) {
+
+    let seconds = Math.floor((Date.now() - date) / 1000);
+
+    let interval = seconds / 31536000;
+
+    if (interval > 1) {
+        return Math.floor(interval) + " years";
+    }
+    interval = seconds / 2592000;
+    if (interval > 1) {
+        return Math.floor(interval) + " months";
+    }
+    interval = seconds / 86400;
+    if (interval > 1) {
+        return Math.floor(interval) + " days";
+    }
+    interval = seconds / 3600;
+    if (interval > 1) {
+        return Math.floor(interval) + " hours";
+    }
+    interval = seconds / 60;
+    if (interval > 1) {
+        return Math.floor(interval) + " minutes";
+    }
+    return Math.floor(seconds) + " seconds";
 }
 
 colorCancelButton.addEventListener('click', e => {

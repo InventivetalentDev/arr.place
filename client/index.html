@@ -20,7 +20,7 @@
         <meta property="twitter:description" content="collaborative pixel art">
         <meta property="twitter:image" content="https://arr.place/img/banner.jpg">
 
-        <link rel="stylesheet" href="style.css?v=18">
+        <link rel="stylesheet" href="style.css?v=23">
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/solid.css" integrity="sha384-Tv5i09RULyHKMwX0E8wJUqSOaXlyu3SQxORObAI08iUwIalMmN5L6AvlPX2LMoSE" crossorigin="anonymous"/>
         <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/fontawesome.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7" crossorigin="anonymous"/>
 
@@ -51,6 +51,25 @@
                 <div id="position">
                     <div id="zoom">
                         <div id="selection-container">
+                            <div id="selection-bubble" style="display: none">
+                                <div id="selection-text-container">
+                                    <div id="selection-text">
+                                        <span><i class="fas fa-history"></i> <span id="modified-time"></span></span><br>
+                                        <span><i class="fas fa-user"></i> <span id="modified-user"></span></span>
+                                    </div>
+                                </div>
+                                <svg width="512" height="256" viewBox="0 0 135.46666 67.733336" version="1.1" id="svg3310" inkscape:version="1.1.2 (b8e25be833, 2022-02-05)" sodipodi:docname="info-bubble.svg" xmlns="http://www.w3.org/2000/svg"
+                                     xmlns:svg="http://www.w3.org/2000/svg">
+                                    <defs id="defs3307">
+                                        <rect x="44.158069" y="44.710044" width="446.54847" height="151.79336" id="rect9459"></rect>
+                                    </defs>
+                                    <g id="layer1">
+                                        <rect style="fill:#f0f0f0;stroke:#f0f0f0;stroke-width:2.64583;fill-opacity:1;stroke-opacity:1;stroke-linejoin:round" id="rect3457" width="132.82083" height="54.504169" x="1.322915" y="1.322915"></rect>
+                                        <path style="fill:#f0f0f0;stroke:#f0f0f0;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1" d="M 59.266667,56.091667 67.733333,67.744088 76.2,56.091667 Z" id="path3572" sodipodi:nodetypes="cccc"></path>
+                                    </g>
+                                </svg>
+                            </div>
+
                             <svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
                                 <g id="layer1">
                                     <path style="fill:none;stroke:#000000;stroke-width: 50;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" d="M 100,0 H 0 v 100" id="path1221"></path>
@@ -73,6 +92,6 @@
                 </div>
             </div>
         </div>
-        <script src="dist/bundle.js?v=71"></script>
+        <script src="dist/bundle.js?v=75"></script>
     </body>
 </html>
