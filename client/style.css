@@ -58,6 +58,9 @@ button {
     max-width: 50vw;
     opacity: 0.6;
 }
+#controls-container:hover {
+    opacity: 0.95;
+}
 
 @media (orientation: portrait) {
     #controls-container {
