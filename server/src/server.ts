@@ -119,6 +119,11 @@ async function startup() {
     app.use(cookieParser())
     app.use(bodyParser.json());
 
+    app.use((req, res, next) => {
+        res.header('X-Canvas-Version', `${ VERSION }`);
+        next();
+    })
+
     try {
         fs.mkdirSync("data");
     } catch (e) {
