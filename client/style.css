@@ -56,15 +56,15 @@ button {
     left: 20px;
     user-select: none;
     max-width: 50vw;
-    opacity: 0.6;
+    opacity: 0.8;
 }
-#controls-container:hover {
+#controls-container:hover,#controls-container:focus,#controls-container {
     opacity: 0.95;
 }
 
 @media (orientation: portrait) {
     #controls-container {
-        max-width: 85vw;
+        max-width: 80vw;
     }
 }
 
@@ -95,7 +95,7 @@ button {
 }
 
 #color-place-button, #color-cancel-button {
-    width: 30px;
+    width: 50px;
     height: 30px;
     padding: 8px 8px;
 }

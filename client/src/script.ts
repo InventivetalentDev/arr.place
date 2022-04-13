@@ -99,7 +99,6 @@ async function init() {
             clearSelectedColor();
             selectedColor = colorIndex;
             colorPlaceButton.removeAttribute('disabled')
-            colorCancelButton.removeAttribute('disabled')
             selectionContainer.style.backgroundColor = color;
             btn.classList.add('selected-color');
         })
@@ -160,6 +159,7 @@ function getState() {
 
                 const img = document.createElement('img') as HTMLImageElement;
                 img.src = endpoint + '/pngs/' + l;
+                img.crossOrigin = 'anonymous';
                 img.onload = function () {
                     ctx.drawImage(img, x * canvasState.s, y * canvasState.s);
                     setTimeout(() => {
@@ -207,8 +207,8 @@ function getPixelInfo(x: number, y: number) {
         .then(i => {
             if (!i || !i.mod) return;
 
-            modifiedTime.textContent = `${ timeSince(i.mod*1000) } ago`;
-            modifiedTime.setAttribute('title', new Date(i.mod*1000).toLocaleString());
+            modifiedTime.textContent = `${ timeSince(i.mod * 1000) } ago`;
+            modifiedTime.setAttribute('title', new Date(i.mod * 1000).toLocaleString());
 
             modifiedUser.textContent = `${ i.nme || i.usr || '???' }`;
 
@@ -220,7 +220,6 @@ function clearSelectedColor() {
     selectedColor = -1;
     document.querySelectorAll('.color-button').forEach(e => e.classList.remove('selected-color'));
     colorPlaceButton.setAttribute('disabled', '')
-    colorCancelButton.setAttribute('disabled', '')
     selectionContainer.style.backgroundColor = 'transparent';
 }
 
@@ -255,6 +254,10 @@ function timeSince(date) {
 colorCancelButton.addEventListener('click', e => {
     e.preventDefault();
     clearSelectedColor();
+
+    canvasState.sx = -1;
+    canvasState.sy = -1;
+    controlsContainer.style.display = 'none';
 })
 
 async function placeSelectedColor() {
@@ -415,6 +418,13 @@ function updateSelection() {
     if (canvasState.sx >= 0 && canvasState.sy >= 0) {
         selectionContainer.style.display = 'block';
         selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(1)`;
+
+        const color = getPixelColor(canvasState.x, canvasState.y);
+        const avgColor = (color[0] + color[1] + color[2]) / 3;
+        const paths = selectionContainer.querySelectorAll('path')
+        for (let i = 0; i < paths.length; i++) {
+            paths[i].style.stroke = `rgb(${ 255 - avgColor }, ${ 255 - avgColor }, ${ 255 - avgColor })`;
+        }
     } else {
         selectionContainer.style.display = 'none';
     }
@@ -434,6 +444,11 @@ function updatePosition() {
 
 function updatePositionInfo() {
     positionInfo.innerHTML = `${ Math.round(canvasState.cx) },${ Math.round(canvasState.cy) }@${ Math.round(canvasState.cz) }<br/>${ Math.round(canvasState.x) },${ Math.round(canvasState.y) }`
+}
+
+function getPixelColor(x: number, y: number): number[] {
+    const data = ctx.getImageData(x, y, 1, 1).data;
+    return [data[0], data[1], data[2], data[3]];
 }
 
 
