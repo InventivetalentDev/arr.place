@@ -233,7 +233,7 @@ async function startup() {
 
         console.log('register', req.ip)
 
-        const userId = jwtPayload.sub || randomUuid();
+        const userId = jwtPayload?.sub || randomUuid();
         const userName = makeName();
         jwtPayload = {
             sub: userId,
