@@ -15,6 +15,7 @@ const activeInfo = document.getElementById('active') as HTMLSpanElement;
 const modifiedInfo = document.getElementById('selection-bubble') as HTMLDivElement;
 const modifiedTime = document.getElementById('modified-time') as HTMLSpanElement;
 const modifiedUser = document.getElementById('modified-user') as HTMLSpanElement;
+const modifiedUserContainer = document.getElementById('modified-user-text') as HTMLSpanElement;
 const timer = document.getElementById('timer') as HTMLElement;
 const camera = document.getElementById('camera') as HTMLDivElement;
 const position = document.getElementById('position') as HTMLDivElement;
@@ -210,7 +211,9 @@ function getPixelInfo(x: number, y: number) {
             modifiedTime.textContent = `${ timeSince(i.mod * 1000) } ago`;
             modifiedTime.setAttribute('title', new Date(i.mod * 1000).toLocaleString());
 
-            modifiedUser.textContent = `${ i.nme || i.usr || '???' }`;
+            const name = i.nme || i.usr || '???';
+            modifiedUser.textContent = `${ name }`;
+            modifiedUserContainer.style.fontSize = `${45-name.length*0.5}px`
 
             modifiedInfo.style.display = 'block';
         });
