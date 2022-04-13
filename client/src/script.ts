@@ -284,6 +284,8 @@ colorCancelButton.addEventListener('click', e => {
     canvasState.sx = -1;
     canvasState.sy = -1;
     controlsContainer.style.display = 'none';
+
+    selectionContainer.style.display = 'none';
 })
 
 async function placeSelectedColor() {
