@@ -161,9 +161,9 @@ button {
     transition: transform 200ms;
 }
 
-#selection-container > svg {
+#selection-wrapper, #selection-container > svg {
     width: 100px;
-    height: 100px;
+    height: 100px
 }
 
 #selection-bubble {

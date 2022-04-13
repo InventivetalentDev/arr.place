@@ -1,4 +1,4 @@
-import { isMouseEvent, isTouchEvent } from "./util";
+import { hexToRgb, isMouseEvent, isTouchEvent } from "./util";
 import { MAX_ZOOM, MIN_ZOOM, ZOOM_FACTOR } from "./data";
 
 const endpoint = 'https://y.arr.place';
@@ -21,6 +21,7 @@ const camera = document.getElementById('camera') as HTMLDivElement;
 const position = document.getElementById('position') as HTMLDivElement;
 const zoom = document.getElementById('zoom') as HTMLDivElement;
 const selectionContainer = document.getElementById('selection-container') as HTMLDivElement;
+const selectionWrapper = document.getElementById('selection-wrapper') as HTMLDivElement;
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvasEl.getContext('2d')!;
 
@@ -101,7 +102,8 @@ async function init() {
             clearSelectedColor();
             selectedColor = colorIndex;
             colorPlaceButton.removeAttribute('disabled')
-            selectionContainer.style.backgroundColor = color;
+            selectionWrapper.style.backgroundColor = color;
+            updateSelectionColor();
             btn.classList.add('selected-color');
         })
     }
@@ -245,7 +247,8 @@ function clearSelectedColor() {
     selectedColor = -1;
     document.querySelectorAll('.color-button').forEach(e => e.classList.remove('selected-color'));
     colorPlaceButton.setAttribute('disabled', '')
-    selectionContainer.style.backgroundColor = 'transparent';
+    selectionWrapper.style.backgroundColor = 'transparent';
+    updateSelectionColor();
 }
 
 function timeSince(date) {
@@ -446,17 +449,26 @@ function updateSelection() {
         selectionContainer.style.display = 'block';
         selectionContainer.style.transform = `translateX(${ canvasState.sx }px) translateY(${ canvasState.sy }px) scale(1)`;
 
-        const color = getPixelColor(canvasState.x, canvasState.y);
-        const avgColor = (color[0] + color[1] + color[2]) / 3;
-        const svg = selectionContainer.querySelector('#selection-svg') as SVGElement;
-        const paths = svg.querySelectorAll('path');
-        for (let i = 0; i < paths.length; i++) {
-            paths[i].style.stroke = `rgb(${ 255 - avgColor }, ${ 255 - avgColor }, ${ 255 - avgColor })`;
-        }
+        updateSelectionColor();
     } else {
         selectionContainer.style.display = 'none';
     }
     updatePositionInfo();
+}
+
+function updateSelectionColor() {
+    let color;
+    if (selectedColor >= 0) {
+        color = hexToRgb(canvasState.c[selectedColor]);
+    } else {
+        color = getPixelColor(canvasState.x, canvasState.y);
+    }
+    const avgColor = (color[0] + color[1] + color[2]) / 3;
+    const svg = selectionContainer.querySelector('#selection-svg') as SVGElement;
+    const paths = svg.querySelectorAll('path');
+    for (let i = 0; i < paths.length; i++) {
+        paths[i].style.stroke = `rgb(${ 255 - avgColor }, ${ 255 - avgColor }, ${ 255 - avgColor })`;
+    }
 }
 
 function updateZoom() {
