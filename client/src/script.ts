@@ -142,6 +142,12 @@ async function init() {
 let lastState: string[] = [];
 
 function getState() {
+    if (document.hidden) {
+        // window not active, don't bother requesting the state
+        setTimeout(() => getState(), 5000);
+        return;
+    }
+
     fetch(endpoint + '/state', {
         credentials: 'include'
     })
@@ -182,10 +188,16 @@ function getState() {
         .catch(err => {
             console.warn(err);
             setTimeout(() => getState(), 5000);
-        })
+        });
 }
 
 function getInfo() {
+    if (document.hidden) {
+        // window not active
+        setTimeout(() => getInfo(), 30000);
+        return;
+    }
+
     fetch(endpoint + '/info')
         .then(res => res.json())
         .then(i => {
