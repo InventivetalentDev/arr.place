@@ -130,7 +130,6 @@ async function init() {
 
     updatePosition();
     updateZoom();
-    updateSelection();
 
     updateTimeout();
 
