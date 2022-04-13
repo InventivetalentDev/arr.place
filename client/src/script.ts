@@ -36,6 +36,7 @@ let canvasState: CState = {
     cz: 0.5,
     x: 0,
     y: 0,
+    v: 0,
     n: 0
 };
 
@@ -199,7 +200,17 @@ function getInfo() {
     }
 
     fetch(endpoint + '/info')
-        .then(res => res.json())
+        .then(res => {
+            const v = parseInt(res.headers['x-canvas-version']);
+            if (v > canvasState.v) {
+                canvasState.v = v;
+                console.info("Reloading to update to version " + v);
+                setTimeout(() => {
+                    location.reload();
+                }, 60000 * Math.random());
+            }
+            return res.json();
+        })
         .then(i => {
             info = i;
 
@@ -225,7 +236,7 @@ function getPixelInfo(x: number, y: number) {
 
             const name = i.nme || i.usr || '???';
             modifiedUser.textContent = `${ name }`;
-            modifiedUserContainer.style.fontSize = `${45-name.length*0.5}px`
+            modifiedUserContainer.style.fontSize = `${ 45 - name.length * 0.5 }px`
 
             modifiedInfo.style.display = 'block';
         });
@@ -606,6 +617,7 @@ interface CState {
     x: number;
     y: number;
     n: number;
+    v: number;
     u?: string;
 }
 
