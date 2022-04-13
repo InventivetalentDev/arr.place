@@ -19,7 +19,7 @@ UserSchema.statics.findForUuid = function (this: IUserModel, uuid: string): Prom
     }).exec();
 }
 
-UserSchema.statics.updateUsed = function (this: IUserModel, uuid: string, date: Date = new Date()): Promise<void> {
+UserSchema.statics.updateUsed = function (this: IUserModel, uuid: string, date: Date = new Date()): Promise<boolean> {
     return this.updateOne({
         uuid: uuid
     }, {
@@ -27,6 +27,7 @@ UserSchema.statics.updateUsed = function (this: IUserModel, uuid: string, date: 
             used: date
         }
     }).exec().then(r => {
+        return r.matchedCount>0
     });
 }
 

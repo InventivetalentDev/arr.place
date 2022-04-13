@@ -12,5 +12,5 @@ export interface IUserDocument extends Document {
 export interface IUserModel extends Model<IUserDocument> {
     findForUuid(uuid: string): Promise<Maybe<IUserDocument>>;
 
-    updateUsed(uuid: string, date?: Date): Promise<void>;
+    updateUsed(uuid: string, date?: Date): Promise<boolean>;
 }

@@ -189,12 +189,16 @@ async function startup() {
             res.status(403).end();
             return;
         }
-        const userId = await applyJWT(req, res, jwtPayload);
+        let userId = await applyJWT(req, res, jwtPayload);
 
         console.log('hello', userId, req.ip)
 
         if (userId) {
-            await User.updateUsed(stripUuid(userId));
+            const matched = await User.updateUsed(stripUuid(userId));
+            if (!matched) {
+                console.warn("User not found", userId);
+                userId = undefined;
+            }
         }
 
         res.json({
@@ -216,7 +220,7 @@ async function startup() {
             res.status(403).end();
             return;
         }
-        if (jwtPayload && jwtPayload.sub) {
+        if (jwtPayload && jwtPayload.sub && jwtPayload.nme) {
             // already registered
             res.status(400).end();
             return;
@@ -224,7 +228,7 @@ async function startup() {
 
         console.log('register', req.ip)
 
-        const userId = randomUuid();
+        const userId = jwtPayload.sub || randomUuid();
         const userName = makeName();
         jwtPayload = {
             sub: userId,
