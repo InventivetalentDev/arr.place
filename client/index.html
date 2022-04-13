@@ -50,12 +50,12 @@
             <div id="camera">
                 <div id="position">
                     <div id="zoom">
-                        <div id="selection-container">
+                        <div id="selection-container" style="display: none">
                             <div id="selection-bubble" style="display: none">
                                 <div id="selection-text-container">
                                     <div id="selection-text">
-                                        <span><i class="fas fa-history"></i> <span id="modified-time"></span></span><br>
-                                        <span><i class="fas fa-user"></i> <span id="modified-user"></span></span>
+                                        <span id="modified-time-text"><i class="fas fa-history"></i> <span id="modified-time"></span></span><br>
+                                        <span id="modified-user-text"><i class="fas fa-user"></i> <span id="modified-user"></span></span>
                                     </div>
                                 </div>
                                 <svg width="512" height="256" viewBox="0 0 135.46666 67.733336" version="1.1" id="svg3310" inkscape:version="1.1.2 (b8e25be833, 2022-02-05)" sodipodi:docname="info-bubble.svg" xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +70,7 @@
                                 </svg>
                             </div>
 
-                            <svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                            <svg id="selection-svg" width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
                                 <g id="layer1">
                                     <path style="fill:none;stroke:#000000;stroke-width: 50;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" d="M 100,0 H 0 v 100" id="path1221"></path>
                                     <path style="fill:none;stroke:#000000;stroke-width: 50;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" d="m 200,0 h 100 v 100" id="path1221-5"></path>
@@ -92,6 +92,6 @@
                 </div>
             </div>
         </div>
-        <script src="dist/bundle.js?v=82"></script>
+        <script src="dist/bundle.js?v=83"></script>
     </body>
 </html>

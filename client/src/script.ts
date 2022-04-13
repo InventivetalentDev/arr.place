@@ -421,7 +421,8 @@ function updateSelection() {
 
         const color = getPixelColor(canvasState.x, canvasState.y);
         const avgColor = (color[0] + color[1] + color[2]) / 3;
-        const paths = selectionContainer.querySelectorAll('path')
+        const svg = selectionContainer.querySelector('#selection-svg') as SVGElement;
+        const paths = svg.querySelectorAll('path');
         for (let i = 0; i < paths.length; i++) {
             paths[i].style.stroke = `rgb(${ 255 - avgColor }, ${ 255 - avgColor }, ${ 255 - avgColor })`;
         }
