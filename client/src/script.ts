@@ -208,6 +208,8 @@ function getPixelInfo(x: number, y: number) {
             if (!i || !i.mod) return;
 
             modifiedTime.textContent = `${ timeSince(i.mod*1000) } ago`;
+            modifiedTime.setAttribute('title', new Date(i.mod*1000).toLocaleString());
+
             modifiedUser.textContent = `${ i.nme || i.usr || '???' }`;
 
             modifiedInfo.style.display = 'block';

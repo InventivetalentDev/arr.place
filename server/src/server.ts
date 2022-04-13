@@ -230,6 +230,7 @@ async function startup() {
             sub: userId,
             lst: Math.floor(Date.now() / 1000) - TIMEOUT,
             cnt: 0,
+            nme: userName,
             ip: req.ip,
             iss: 'https://arr.place',
             jti: randomUuid()
@@ -399,10 +400,13 @@ async function startup() {
         await User.updateUsed(stripUuid(jwtPayload.sub));
         ACTIVE_CACHE.put(stripUuid(jwtPayload.sub), Math.floor(Date.now() / 1000));
 
+        //TODO: remove
         User.findOne({ uuid: stripUuid(jwtPayload.sub) }).exec().then(user => {
-            if (!user || user.name) return;
-            user.name = makeName();
-            return user.save();
+            if (!user) return;
+            if (!user.name) {
+                user.name = makeName();
+                user.save();
+            }
         })
 
         res.json({
