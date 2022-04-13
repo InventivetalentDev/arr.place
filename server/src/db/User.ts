@@ -5,7 +5,8 @@ export const UserSchema: Schema<IUserDocument, IUserModel> = new Schema(
     {
         uuid: {
             type: String,
-            index: true
+            index: true,
+            unique: true
         },
         name: String,
         created: Date,
