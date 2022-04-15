@@ -78,7 +78,6 @@ export async function applyJWT(req: Request, res: Response, payload?: JwtPayload
     })
     res.cookie('access_token', token, {
         domain: '.arr.place',
-        secure: true,
         maxAge: 31556926000
     })
 
