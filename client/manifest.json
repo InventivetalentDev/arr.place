@@ -1,0 +1,27 @@
+{
+  "name": "(ar)r.place",
+  "short_name": "place",
+  "description": "collaborative pixel art.",
+  "icons": [
+    {
+      "src": "/img/canvas-pixel-x32.png",
+      "sizes": "32x32"
+    },
+    {
+      "src": "/img/canvas-pixel-x64.png",
+      "sizes": "64x64"
+    },
+    {
+      "src": "/img/canvas-pixel-x128.png",
+      "sizes": "128x128"
+    },
+    {
+      "src": "/img/canvas-pixel-x256.png",
+      "sizes": "256x256"
+    }
+  ],
+  "background_color": "#383838",
+  "start_url": "/?utm_source=homescreen",
+  "display": "fullscreen",
+  "orientation": "any"
+}
