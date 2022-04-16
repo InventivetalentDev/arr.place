@@ -22,6 +22,7 @@ const position = document.getElementById('position') as HTMLDivElement;
 const zoom = document.getElementById('zoom') as HTMLDivElement;
 const selectionContainer = document.getElementById('selection-container') as HTMLDivElement;
 const selectionWrapper = document.getElementById('selection-wrapper') as HTMLDivElement;
+const credits = document.getElementById('credits') as HTMLDivElement;
 const canvasEl = document.getElementById('canvas') as HTMLCanvasElement;
 const ctx = canvasEl.getContext('2d')!;
 
@@ -407,6 +408,10 @@ function canvasClicked(event: MouseEvent) {
 }
 
 function outsideCanvasClicked(event: MouseEvent) {
+    if (event.composedPath().indexOf(credits) !== -1) {
+        return;
+    }
+
     event.stopPropagation();
     event.preventDefault();
 
