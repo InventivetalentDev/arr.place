@@ -610,7 +610,7 @@ function updateSearchParams() {
     params.set('cz', `${ Math.round(canvasState.cz) }`);
     params.set('x', `${ Math.round(canvasState.x) }`);
     params.set('y', `${ Math.round(canvasState.y) }`);
-    history.pushState(null, '', location.pathname + '?' + params.toString());
+    history.replaceState('', '', location.pathname + '?' + params.toString());
 }
 
 
