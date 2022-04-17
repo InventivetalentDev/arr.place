@@ -4,7 +4,7 @@ import { v4 as randomUuid } from "uuid";
 import { TIMEOUT } from "./data";
 import fs from "fs";
 import { User } from "./db/User";
-import { Maybe, stripUuid } from "./util";
+import { Maybe, stripUuid, validateOrigin } from "./util";
 
 let jwtPrivateKey;
 try {
@@ -49,7 +49,7 @@ export async function verifyJWT(req: Request, res: Response): Promise<JwtPayload
 }
 
 export async function applyJWT(req: Request, res: Response, payload?: JwtPayload): Promise<Maybe<string>> {
-    if(!payload) return undefined;
+    if (!payload) return undefined;
     // if (!payload) { //TODO: remove
     //     const userId = randomUuid();
     //     payload = {
@@ -79,7 +79,7 @@ export async function applyJWT(req: Request, res: Response, payload?: JwtPayload
     res.cookie('access_token', token, {
         domain: '.arr.place',
         maxAge: 31556926000
-    })
+    });
 
     return payload.sub!;
 }

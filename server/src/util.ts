@@ -16,4 +16,13 @@ export function hexToRgb(hex): number[] {
     ];
 }
 
+export function validateOrigin(origin: string): Maybe<string> {
+    if (["https://arr.place", "https://arr-place.pages.dev"].includes(origin)) {
+        return origin;
+    } else if (/https:\/\/[a-z0-9]+\.arr-place\.pages\.dev/m.test(origin as string)) {
+        return origin;
+    }
+    return undefined;
+}
+
 export type Maybe<T> = T | undefined | null;

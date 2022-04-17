@@ -14,7 +14,7 @@ import { applyJWT, verifyJWT } from "./jwt";
 import { connectMongo } from "./db/mongo";
 import { start } from "repl";
 import { Change } from "./db/Change";
-import { Maybe, stripUuid } from "./util";
+import { Maybe, stripUuid, validateOrigin } from "./util";
 import { User } from "./db/User";
 import { AsyncLoadingCache, Caches, SimpleCache } from "@inventivetalent/loading-cache";
 import { Time } from "@inventivetalent/time";
@@ -25,6 +25,7 @@ import { IUserDocument } from "./typings/db/IUserDocument";
 const app = express()
 const port = 3024
 
+const ALLOWED_ORIGINS = ["https://arr.place", "https://arr-place.pages.dev"];
 
 const VERSION = Math.floor(Date.now() / 1000) - EPOCH_BASE;
 console.log('version', VERSION);
