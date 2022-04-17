@@ -61,6 +61,9 @@ async function init() {
     try {
         initInfo = await fetch(endpoint + '/hello', {
             credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
         }).then(res => res.json());
     } catch (e) {
         console.warn(e);
@@ -76,6 +79,9 @@ async function init() {
             initInfo = await fetch(endpoint + '/register', {
                 method: 'POST',
                 credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             }).then(res => res.json());
         } catch (e) {
             console.warn(e);
@@ -152,7 +158,10 @@ function getState() {
     }
 
     fetch(endpoint + '/state', {
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
         .then(res => res.json())
         .then(res => {
@@ -201,7 +210,11 @@ function getInfo() {
         return;
     }
 
-    fetch(endpoint + '/info')
+    fetch(endpoint + '/info', {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
         .then(res => {
             try {
                 const v = parseInt(res.headers.get('x-canvas-version')!);
@@ -232,7 +245,11 @@ function getInfo() {
 
 function getPixelInfo(x: number, y: number) {
     modifiedInfo.style.display = 'none';
-    fetch(endpoint + '/info/' + x + '/' + y)
+    fetch(endpoint + '/info/' + x + '/' + y, {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
         .then(res => res.json())
         .then(i => {
             if (!i || !i.mod) return;
