@@ -25,8 +25,6 @@ import { IUserDocument } from "./typings/db/IUserDocument";
 const app = express()
 const port = 3024
 
-const ALLOWED_ORIGINS = ["https://arr.place", "https://arr-place.pages.dev"];
-
 const VERSION = Math.floor(Date.now() / 1000) - EPOCH_BASE;
 console.log('version', VERSION);
 
