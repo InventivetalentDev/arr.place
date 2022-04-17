@@ -203,13 +203,17 @@ function getInfo() {
 
     fetch(endpoint + '/info')
         .then(res => {
-            const v = parseInt(res.headers['x-canvas-version']);
-            if (v > canvasState.v) {
-                canvasState.v = v;
-                console.info("Reloading to update to version " + v);
-                setTimeout(() => {
-                    location.reload();
-                }, 60000 * Math.random());
+            try {
+                const v = parseInt(res.headers.get('x-canvas-version')!);
+                if (v > canvasState.v) {
+                    canvasState.v = v;
+                    console.info("Reloading to update to version " + v);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 60000 * Math.random());
+                }
+            } catch (e) {
+                console.warn(e);
             }
             return res.json();
         })
