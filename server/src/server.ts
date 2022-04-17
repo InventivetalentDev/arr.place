@@ -274,6 +274,7 @@ async function startup() {
             return;
         }
         if (!jwtPayload) {
+            console.warn('missing jwt payload');
             res.status(403).end();
             return;
         }
@@ -334,6 +335,7 @@ async function startup() {
             return;
         }
         if (!jwtPayload) {
+            console.warn('missing jwt payload');
             res.status(403).end();
             return;
         }
