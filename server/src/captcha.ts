@@ -17,6 +17,10 @@ export async function verifyCaptcha(req: Request, res: Response): Promise<boolea
         }
     }).then(res => res.data as CaptchaResponse);
     console.log(response);
+    if (response.hostname !== 'arr.place') {
+        res.status(400).end();
+        return false;
+    }
 
     return response.success;
 }
