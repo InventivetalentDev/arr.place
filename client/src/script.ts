@@ -76,7 +76,7 @@ async function init() {
 
     if (!initInfo.u) {
         try {
-            let captcha = await executeCaptcha();
+            let captcha = await executeCaptcha('register');
             initInfo = await fetch(endpoint + '/register', {
                 method: 'POST',
                 credentials: 'include',
@@ -317,7 +317,7 @@ colorCancelButton.addEventListener('click', e => {
 async function placeSelectedColor() {
     if (selectedColor < 0) return;
     if (Math.floor(Date.now() / 1000) < canvasState.n) return;
-    let captcha = await executeCaptcha();
+    let captcha = await executeCaptcha('place');
     fetch(endpoint + '/place', {
         method: 'PUT',
         headers: {
@@ -643,14 +643,14 @@ function updateSearchParams() {
     history.replaceState('', '', location.pathname + '?' + params.toString());
 }
 
-function executeCaptcha(): Promise<string> {
+function executeCaptcha(action: string = 'submit'): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         try {
             // @ts-ignore
             grecaptcha.ready(function () {
                 try {
                     // @ts-ignore
-                    grecaptcha.execute('6LfTwYEfAAAAAJw8Dv8S0EGd3ytq7nQcVGsCfe9n', { action: 'submit' }).then(function (token) {
+                    grecaptcha.execute('6LfTwYEfAAAAAJw8Dv8S0EGd3ytq7nQcVGsCfe9n', { action: action }).then(function (token) {
                         resolve(token);
                     });
                 } catch (e) {
