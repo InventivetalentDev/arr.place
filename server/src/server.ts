@@ -33,8 +33,8 @@ export const corsMiddleware = (req: Request, res: Response, next: NextFunction) 
     res.header("Access-Control-Allow-Credentials", "true");
     if (req.method === 'OPTIONS') {
         res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT");
-        res.header("Access-Control-Allow-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User");
-        res.header("Access-Control-Request-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User, X-Captcha-Token");
+        res.header("Access-Control-Request-Headers", "X-Requested-With, Accept, Content-Type, Origin, X-User, X-Captcha-Token");
         return res.sendStatus(200);
     } else {
         return next();
