@@ -76,11 +76,13 @@ async function init() {
 
     if (!initInfo.u) {
         try {
+            let captcha = await executeCaptcha();
             initInfo = await fetch(endpoint + '/register', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                     'X-Captcha-Token': captcha
                 }
             }).then(res => res.json());
         } catch (e) {
@@ -315,11 +317,13 @@ colorCancelButton.addEventListener('click', e => {
 async function placeSelectedColor() {
     if (selectedColor < 0) return;
     if (Math.floor(Date.now() / 1000) < canvasState.n) return;
+    let captcha = await executeCaptcha();
     fetch(endpoint + '/place', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
-            'X-User': canvasState.u!
+            'X-User': canvasState.u!,
+            'X-Captcha-Token': captcha
         },
         credentials: 'include',
         body: JSON.stringify([canvasState.x, canvasState.y, selectedColor])
@@ -639,6 +643,25 @@ function updateSearchParams() {
     history.replaceState('', '', location.pathname + '?' + params.toString());
 }
 
+function executeCaptcha(): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        try {
+            // @ts-ignore
+            grecaptcha.ready(function () {
+                try {
+                    // @ts-ignore
+                    grecaptcha.execute('6LfTwYEfAAAAAJw8Dv8S0EGd3ytq7nQcVGsCfe9n', { action: 'submit' }).then(function (token) {
+                        resolve(token);
+                    });
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
 
 init();
 
