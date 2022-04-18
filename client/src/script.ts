@@ -82,7 +82,7 @@ async function init() {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
-                     'X-Captcha-Token': captcha
+                    'X-Captcha-Token': captcha
                 }
             }).then(res => res.json());
         } catch (e) {
