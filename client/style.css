@@ -225,5 +225,5 @@ button {
 }
 
 .grecaptcha-badge {
-    top: 14px !important;
+    bottom: 84px !important;
 }
