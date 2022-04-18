@@ -223,3 +223,7 @@ button {
     text-decoration: none;
     color: #6d6dff;
 }
+
+.grecaptcha-badge {
+    top: 14px !important;
+}
