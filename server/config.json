@@ -1,5 +1,8 @@
 {
   "mongo": {
     "url": ""
+  },
+  "captcha": {
+    "key": ""
   }
 }

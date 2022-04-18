@@ -21,6 +21,7 @@ import { Time } from "@inventivetalent/time";
 import { IChangeDocument } from "./typings/db/IChangeDocument";
 import { makeName } from "./names";
 import { IUserDocument } from "./typings/db/IUserDocument";
+import { verifyCaptcha } from "./captcha";
 
 const app = express()
 const port = 3024
@@ -232,6 +233,8 @@ async function startup() {
 
         console.log('register', req.ip)
 
+        const captcha = await verifyCaptcha(req, res);
+
         const userId = jwtPayload?.sub || randomUuid();
         const userName = makeName();
         jwtPayload = {
@@ -343,6 +346,8 @@ async function startup() {
         }
 
         console.log('place', jwtPayload.sub, req.ip)
+
+        const captcha = await verifyCaptcha(req, res);
 
         if (req.headers['x-user'] !== jwtPayload.sub) {
             res.status(403).end();

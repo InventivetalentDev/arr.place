@@ -4,6 +4,7 @@
   "dependencies": {
     "@inventivetalent/loading-cache": "^0.5.7",
     "@inventivetalent/time": "^1.0.2",
+    "axios": "^0.26.1",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
