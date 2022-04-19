@@ -21,7 +21,7 @@ import { Time } from "@inventivetalent/time";
 import { IChangeDocument } from "./typings/db/IChangeDocument";
 import { makeName } from "./names";
 import { IUserDocument } from "./typings/db/IUserDocument";
-import { verifyCaptcha } from "./captcha";
+import { CAPTCHA_THRESHOLD, verifyCaptcha } from "./captcha";
 
 const app = express()
 const port = 3024
@@ -235,6 +235,16 @@ async function startup() {
         console.log('register', req.ip)
 
         const captcha = await verifyCaptcha(req, res);
+        if(!captcha) {
+            console.warn('Captcha failed', req.ip);
+            console.log(captcha);
+            res.status(403).end();
+            return;
+        }
+        if (captcha.score! < CAPTCHA_THRESHOLD) {
+            console.warn('low captcha score', req.ip, captcha.score);
+            console.log(captcha);
+        }
 
         const userId = jwtPayload?.sub || randomUuid();
         const userName = makeName();
@@ -349,6 +359,16 @@ async function startup() {
         console.log('place', jwtPayload.sub, req.ip)
 
         const captcha = await verifyCaptcha(req, res);
+        if(!captcha) {
+            console.warn('Captcha failed', req.ip);
+            console.log(captcha);
+            res.status(403).end();
+            return;
+        }
+        if (captcha.score! < CAPTCHA_THRESHOLD) {
+            console.warn('low captcha score', req.ip, captcha.score);
+            console.log(captcha);
+        }
 
         if (req.headers['x-user'] !== jwtPayload.sub) {
             res.status(403).end();
@@ -425,9 +445,13 @@ async function startup() {
             }
         })
 
+        let timeout = TIMEOUT;
+        if (captcha.score! < CAPTCHA_THRESHOLD) {
+            timeout *= 5;
+        }
         res.json({
-            next: Math.floor(Date.now() / 1000) + TIMEOUT
-        })
+            next: Math.floor(Date.now() / 1000) + timeout
+        });
     });
 
 
