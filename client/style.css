@@ -203,6 +203,7 @@ button {
 #canvas {
     display: block;
     image-rendering: pixelated;
+    -ms-interpolation-mode: nearest-neighbor;
     left: 0;
     top: 0;
     /*top: 0;*/
